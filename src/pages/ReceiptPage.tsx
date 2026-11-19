@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer, MessageCircleMore, Landmark } from 'lucide-react';
 import { useInventoryStore } from '../store/inventoryStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useNotificationStore } from '../store/notificationStore';
+import { useAuthStore } from '../store/authStore';
 import { formatCurrency, formatDateTime } from '../lib/format';
 import { whatsappLink } from '../lib/whatsapp';
 import Button from '../components/ui/Button';
@@ -27,6 +29,8 @@ export default function ReceiptPage() {
   const transactions = useInventoryStore((s) => s.transactions);
   const items = useInventoryStore((s) => s.items);
   const settings = useSettingsStore((s) => s.settings);
+  const logActivity = useNotificationStore((s) => s.logActivity);
+  const user = useAuthStore((s) => s.currentUser());
 
   const txn = transactions.find((t) => t.id === transactionId);
   const item = txn ? items.find((i) => i.id === txn.itemId) : undefined;
@@ -60,6 +64,13 @@ export default function ReceiptPage() {
       balance > 0 ? `balance owing: ${formatCurrency(balance, settings.currencySymbol)}` : 'paid in full'
     }. Thank you for your business!`;
     window.open(whatsappLink(txn.customerPhone, message), '_blank');
+    logActivity('Invoice sent', `${user?.name ?? txn.staffName} sent invoice ${txn.receiptNo} to ${txn.customerName} on WhatsApp.`, user?.name ?? txn.staffName);
+  }
+
+  function printReceipt() {
+    if (!txn) return;
+    logActivity('Receipt generated', `${user?.name ?? txn.staffName} generated invoice ${txn.receiptNo} for ${txn.customerName}.`, user?.name ?? txn.staffName);
+    window.print();
   }
 
   return (
@@ -74,7 +85,7 @@ export default function ReceiptPage() {
               Send on WhatsApp
             </Button>
           )}
-          <Button icon={<Printer size={15} />} onClick={() => window.print()}>
+          <Button icon={<Printer size={15} />} onClick={printReceipt}>
             Print / Save PDF
           </Button>
         </div>

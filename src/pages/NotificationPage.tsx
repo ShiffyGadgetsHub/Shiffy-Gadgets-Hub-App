@@ -67,6 +67,7 @@ export default function NotificationPage() {
   const inbox = useMyInbox();
   const isStaff = useIsStaffView();
   const sendPush = useNotificationStore((s) => s.sendPush);
+  const logActivity = useNotificationStore((s) => s.logActivity);
   const markRead = useNotificationStore((s) => s.markRead);
   const markManyRead = useNotificationStore((s) => s.markManyRead);
   const markAllRead = () => markManyRead(inbox.filter((m) => !m.read).map((m) => m.id));
@@ -111,8 +112,10 @@ export default function NotificationPage() {
 
   function handleSend() {
     if (!selected) return;
+    const staff = user?.name ?? 'Staff';
     const message = renderTemplate(template, selected, currencySymbol);
-    sendPush({ customerName: selected.name, customerPhone: selected.phone, message, context: selected.group, sentBy: user?.name ?? 'Staff' });
+    sendPush({ customerName: selected.name, customerPhone: selected.phone, message, context: selected.group, sentBy: staff });
+    logActivity('Push notification sent', `${staff} sent a WhatsApp message to ${selected.name}.`, staff);
     window.open(whatsappLink(selected.phone, message), '_blank');
   }
 
@@ -123,6 +126,7 @@ export default function NotificationPage() {
       sendPush({ customerName: c.name, customerPhone: c.phone, message, context: c.group, sentBy: staff });
       window.open(whatsappLink(c.phone, message), '_blank');
     }
+    logActivity('Push notification sent', `${staff} sent a WhatsApp message to ${filtered.length} customers.`, staff);
     setBulkConfirmOpen(false);
   }
 
