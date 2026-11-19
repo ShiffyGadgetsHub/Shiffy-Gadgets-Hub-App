@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #f6f7fb;
+  --surface-soft: #ffffff;
+  --surface-raised: #ffffff;
+  --ink: #171a2b;
+  --ink-soft: #5b6072;
+  --ink-faint: #9598a8;
+  --line: #e7e8f0;
+  color-scheme: light;
+}
+
+.dark {
+  --surface: #0f1117;
+  --surface-soft: #171a24;
+  --surface-raised: #1d2029;
+  --ink: #eef0f7;
+  --ink-soft: #a7abc2;
+  --ink-faint: #6a6e85;
+  --line: #2a2d3a;
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #343847;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 220ms ease-out;
+}
+
+.font-signature {
+  font-family: 'Caveat', cursive;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
