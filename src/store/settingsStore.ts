@@ -1,45 +1,83 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabaseClient';
 import type { StoreSettings } from '../types';
+
+interface SettingsRow {
+  store_name: string;
+  logo: string | null;
+  currency_symbol: string;
+  low_stock_threshold: number;
+  address: string;
+  support_phone: string;
+  support_email: string;
+  receipt_footer: string;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_name: string | null;
+}
+
+function mapSettings(r: SettingsRow): StoreSettings {
+  return {
+    storeName: r.store_name,
+    logo: r.logo ?? undefined,
+    currencySymbol: r.currency_symbol,
+    lowStockThreshold: r.low_stock_threshold,
+    address: r.address,
+    supportPhone: r.support_phone,
+    supportEmail: r.support_email,
+    receiptFooter: r.receipt_footer,
+    bankName: r.bank_name ?? undefined,
+    bankAccountNumber: r.bank_account_number ?? undefined,
+    bankAccountName: r.bank_account_name ?? undefined,
+  };
+}
+
+const DEFAULT_SETTINGS: StoreSettings = {
+  storeName: 'Shiffy Gadgets Hub',
+  currencySymbol: '₦',
+  lowStockThreshold: 3,
+  address: 'Shop 14, Otigba Street, Computer Village, Ikeja, Lagos',
+  supportPhone: '08012345678',
+  supportEmail: 'hello@shiffygadgetshub.ng',
+  receiptFooter: 'Thank you for shopping with Shiffy Gadgets Hub. All sales of used items are final.',
+  bankName: '',
+  bankAccountNumber: '',
+  bankAccountName: '',
+};
 
 interface SettingsState {
   settings: StoreSettings;
-  updateSettings: (patch: Partial<StoreSettings>) => void;
+  loaded: boolean;
+  loadSettings: () => Promise<void>;
+  updateSettings: (patch: Partial<StoreSettings>) => Promise<void>;
 }
 
-export const useSettingsStore = create<SettingsState>()(
-  persist(
-    (set, get) => ({
-      settings: {
-        storeName: 'Shiffy Gadgets Hub',
-        currencySymbol: '₦',
-        lowStockThreshold: 3,
-        address: 'Shop 14, Otigba Street, Computer Village, Ikeja, Lagos',
-        supportPhone: '08012345678',
-        supportEmail: 'hello@shiffygadgetshub.ng',
-        receiptFooter: 'Thank you for shopping with Shiffy Gadgets Hub. All sales of used items are final.',
-        bankName: '',
-        bankAccountNumber: '',
-        bankAccountName: '',
-      },
-      updateSettings: (patch) => set({ settings: { ...get().settings, ...patch } }),
-    }),
-    {
-      name: 'gadgetstock-settings',
-      version: 1,
-      migrate: (persisted) => {
-        const state = persisted as SettingsState;
-        if (state?.settings?.storeName === 'GadgetStock') {
-          state.settings.storeName = 'Shiffy Gadgets Hub';
-          if (state.settings.supportEmail === 'hello@gadgetstock.ng') {
-            state.settings.supportEmail = 'hello@shiffygadgetshub.ng';
-          }
-          if (state.settings.receiptFooter === 'Thank you for shopping with GadgetStock. All sales of used items are final.') {
-            state.settings.receiptFooter = 'Thank you for shopping with Shiffy Gadgets Hub. All sales of used items are final.';
-          }
-        }
-        return state;
-      },
-    }
-  )
-);
+export const useSettingsStore = create<SettingsState>()((set, get) => ({
+  settings: DEFAULT_SETTINGS,
+  loaded: false,
+
+  loadSettings: async () => {
+    const { data, error } = await supabase.from('store_settings').select('*').eq('id', true).maybeSingle();
+    if (error || !data) return;
+    set({ settings: mapSettings(data as SettingsRow), loaded: true });
+  },
+
+  updateSettings: async (patch) => {
+    const dbPatch: Record<string, unknown> = {};
+    if (patch.storeName !== undefined) dbPatch.store_name = patch.storeName;
+    if (patch.logo !== undefined) dbPatch.logo = patch.logo || null;
+    if (patch.currencySymbol !== undefined) dbPatch.currency_symbol = patch.currencySymbol;
+    if (patch.lowStockThreshold !== undefined) dbPatch.low_stock_threshold = patch.lowStockThreshold;
+    if (patch.address !== undefined) dbPatch.address = patch.address;
+    if (patch.supportPhone !== undefined) dbPatch.support_phone = patch.supportPhone;
+    if (patch.supportEmail !== undefined) dbPatch.support_email = patch.supportEmail;
+    if (patch.receiptFooter !== undefined) dbPatch.receipt_footer = patch.receiptFooter;
+    if (patch.bankName !== undefined) dbPatch.bank_name = patch.bankName || null;
+    if (patch.bankAccountNumber !== undefined) dbPatch.bank_account_number = patch.bankAccountNumber || null;
+    if (patch.bankAccountName !== undefined) dbPatch.bank_account_name = patch.bankAccountName || null;
+
+    const { error } = await supabase.from('store_settings').update(dbPatch).eq('id', true);
+    if (error) return;
+    set({ settings: { ...get().settings, ...patch } });
+  },
+}));

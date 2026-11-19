@@ -4,6 +4,7 @@ import { useAuthStore } from './store/authStore';
 import { useInventoryStore } from './store/inventoryStore';
 import { useCatalogStore } from './store/catalogStore';
 import { useNotificationStore } from './store/notificationStore';
+import { useSettingsStore } from './store/settingsStore';
 import { useUIStore } from './store/uiStore';
 import { RequireAuth, RequireAdmin } from './components/RequireAuth';
 import AppLayout from './components/layout/AppLayout';
@@ -31,8 +32,9 @@ export default function App() {
   const currentUserId = useAuthStore((s) => s.currentUserId);
   const loadInventory = useInventoryStore((s) => s.loadAll);
   const loadInbox = useNotificationStore((s) => s.loadInbox);
-  const seedCatalog = useCatalogStore((s) => s.seedIfEmpty);
-  const syncLatestCatalog = useCatalogStore((s) => s.syncLatestCatalog);
+  const loadOutbox = useNotificationStore((s) => s.loadOutbox);
+  const loadCatalog = useCatalogStore((s) => s.loadAll);
+  const loadSettings = useSettingsStore((s) => s.loadSettings);
   const theme = useUIStore((s) => s.theme);
 
   useEffect(() => {
@@ -40,17 +42,19 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    seedCatalog();
-    syncLatestCatalog();
+    // Public data (shown on the landing page before login) — load regardless of auth state.
+    loadCatalog();
+    loadSettings();
     init();
-  }, [init, seedCatalog, syncLatestCatalog]);
+  }, [init, loadCatalog, loadSettings]);
 
   useEffect(() => {
     if (currentUserId) {
       loadInventory();
       loadInbox();
+      loadOutbox();
     }
-  }, [currentUserId, loadInventory, loadInbox]);
+  }, [currentUserId, loadInventory, loadInbox, loadOutbox]);
 
   if (!authReady) {
     return <div className="flex h-screen items-center justify-center bg-surface text-ink-soft">Loading…</div>;

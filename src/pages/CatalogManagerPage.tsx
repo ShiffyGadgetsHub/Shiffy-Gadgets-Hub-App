@@ -74,9 +74,9 @@ export default function CatalogManagerPage() {
         <Card>
           <form
             className="flex flex-wrap items-end gap-3"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              const res = addCategory(newCategory);
+              const res = await addCategory(newCategory);
               if (!res.ok) setError(res.error ?? 'Could not add category');
               else {
                 setNewCategory('');
@@ -113,9 +113,9 @@ export default function CatalogManagerPage() {
         <Card>
           <form
             className="flex flex-wrap items-end gap-3"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              const res = addBrand(brandCategory, newBrand);
+              const res = await addBrand(brandCategory, newBrand);
               if (!res.ok) setError(res.error ?? 'Could not add brand');
               else {
                 setNewBrand('');
@@ -161,9 +161,9 @@ export default function CatalogManagerPage() {
         <Card>
           <form
             className="flex flex-wrap items-end gap-3"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              const res = addItemName(itemCategory, itemBrand || brandOptions[0], newItemName);
+              const res = await addItemName(itemCategory, itemBrand || brandOptions[0], newItemName);
               if (!res.ok) setError(res.error ?? 'Could not add item name');
               else {
                 setNewItemName('');
