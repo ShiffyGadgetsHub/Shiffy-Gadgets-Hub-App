@@ -30,9 +30,9 @@ export default function App() {
   const authReady = useAuthStore((s) => s.ready);
   const currentUserId = useAuthStore((s) => s.currentUserId);
   const loadInventory = useInventoryStore((s) => s.loadAll);
+  const loadInbox = useNotificationStore((s) => s.loadInbox);
   const seedCatalog = useCatalogStore((s) => s.seedIfEmpty);
   const syncLatestCatalog = useCatalogStore((s) => s.syncLatestCatalog);
-  const seedNotifications = useNotificationStore((s) => s.seedIfEmpty);
   const theme = useUIStore((s) => s.theme);
 
   useEffect(() => {
@@ -42,13 +42,15 @@ export default function App() {
   useEffect(() => {
     seedCatalog();
     syncLatestCatalog();
-    seedNotifications();
     init();
-  }, [init, seedCatalog, syncLatestCatalog, seedNotifications]);
+  }, [init, seedCatalog, syncLatestCatalog]);
 
   useEffect(() => {
-    if (currentUserId) loadInventory();
-  }, [currentUserId, loadInventory]);
+    if (currentUserId) {
+      loadInventory();
+      loadInbox();
+    }
+  }, [currentUserId, loadInventory, loadInbox]);
 
   if (!authReady) {
     return <div className="flex h-screen items-center justify-center bg-surface text-ink-soft">Loading…</div>;
