@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Env files (may hold Supabase keys) — never commit to this public repo
+.env
+.env.*
+!.env.example
+
+# Backend-only config (Supabase schema/migrations/functions) — kept out of
+# this public, frontend-only repo on purpose
+/supabase
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
