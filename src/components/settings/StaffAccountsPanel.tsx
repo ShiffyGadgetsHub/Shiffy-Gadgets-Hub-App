@@ -35,20 +35,28 @@ export default function StaffAccountsPanel() {
   const [deleteTarget, setDeleteTarget] = useState<StaffUser | null>(null);
   const [error, setError] = useState('');
 
+  const STAFF_EMAIL_DOMAIN = '@shiffygadgetshub.com';
+
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'staff'>('staff');
   const [newPassword, setNewPassword] = useState('');
 
   async function submitAdd() {
-    const res = await addStaff({ name, username, password, role });
+    if (!email.toLowerCase().endsWith(STAFF_EMAIL_DOMAIN)) {
+      setError(`Email must end with ${STAFF_EMAIL_DOMAIN}`);
+      return;
+    }
+    const res = await addStaff({ name, username, email: email.trim(), password, role });
     if (!res.ok) {
       setError(res.error ?? 'Could not add staff');
       return;
     }
     setName('');
     setUsername('');
+    setEmail('');
     setPassword('');
     setRole('staff');
     setError('');
@@ -117,6 +125,14 @@ export default function StaffAccountsPanel() {
           </FieldWrap>
           <FieldWrap label="Username" required>
             <Input value={username} onChange={(e) => setUsername(e.target.value)} />
+          </FieldWrap>
+          <FieldWrap label="Email" required hint={`Must end with ${STAFF_EMAIL_DOMAIN}`}>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={`staff${STAFF_EMAIL_DOMAIN}`}
+            />
           </FieldWrap>
           <FieldWrap label="Password" required>
             <PasswordField value={password} onChange={setPassword} />

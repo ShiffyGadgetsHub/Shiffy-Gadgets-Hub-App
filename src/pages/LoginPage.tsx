@@ -14,7 +14,7 @@ export default function LoginPage() {
   const storeName = useSettingsStore((s) => s.settings.storeName);
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +26,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = await login(username, password);
+    const result = await login(email, password);
     setLoading(false);
     if (!result.ok) {
       setError(result.error ?? 'Could not sign in');
@@ -90,8 +90,14 @@ export default function LoginPage() {
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4">
             <div>
-              <Label>Username</Label>
-              <Input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" />
+              <Label>Email</Label>
+              <Input
+                autoFocus
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@shiffygadgetshub.com"
+              />
             </div>
             <div>
               <Label>Password</Label>
@@ -119,11 +125,6 @@ export default function LoginPage() {
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
-
-          <p className="mt-6 rounded-lg bg-surface-soft px-3.5 py-2.5 text-center text-xs text-ink-faint">
-            Demo credentials — username <strong className="text-ink-soft">admin</strong>, password{' '}
-            <strong className="text-ink-soft">admin123</strong>
-          </p>
         </div>
       </div>
     </div>

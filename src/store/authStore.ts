@@ -1,21 +1,56 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { generateId } from '../lib/id';
-import { hashPassword } from '../lib/auth';
+import { supabase } from '../lib/supabaseClient';
 import type { StaffUser, UserRole } from '../types';
 
-interface AuthState {
-  users: StaffUser[];
-  currentUserId: string | null;
-  seeded: boolean;
+interface StaffProfileRow {
+  id: string;
+  name: string;
+  username: string;
+  role: UserRole;
+  active: boolean;
+  position: string | null;
+  phone: string | null;
+  avatar: string | null;
+  created_at: string;
+}
 
-  ensureSeeded: () => Promise<void>;
-  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  logout: () => void;
+function mapProfile(row: StaffProfileRow, email: string): StaffUser {
+  return {
+    id: row.id,
+    name: row.name,
+    username: row.username,
+    email,
+    role: row.role,
+    active: row.active,
+    createdAt: row.created_at,
+    position: row.position ?? undefined,
+    phone: row.phone ?? undefined,
+    avatar: row.avatar ?? undefined,
+  };
+}
+
+async function loadProfile(userId: string, email: string): Promise<StaffUser | null> {
+  const { data, error } = await supabase.from('staff_profiles').select('*').eq('id', userId).maybeSingle();
+  if (error || !data) return null;
+  return mapProfile(data as StaffProfileRow, email);
+}
+
+interface AuthState {
+  currentUserId: string | null;
+  profile: StaffUser | null;
+  users: StaffUser[];
+  ready: boolean;
+
+  init: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
   currentUser: () => StaffUser | null;
+
+  fetchStaff: () => Promise<void>;
   addStaff: (input: {
     name: string;
     username: string;
+    email: string;
     password: string;
     role: UserRole;
     position?: string;
@@ -24,92 +59,103 @@ interface AuthState {
   updateStaff: (
     id: string,
     patch: Partial<Pick<StaffUser, 'name' | 'username' | 'role' | 'active' | 'position' | 'phone' | 'avatar'>>
-  ) => void;
-  resetPassword: (id: string, newPassword: string) => Promise<void>;
-  deleteStaff: (id: string) => void;
+  ) => Promise<void>;
+  resetPassword: (id: string, newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  deleteStaff: (id: string) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      users: [],
-      currentUserId: null,
-      seeded: false,
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  currentUserId: null,
+  profile: null,
+  users: [],
+  ready: false,
 
-      ensureSeeded: async () => {
-        if (get().seeded && get().users.length > 0) return;
-        const passwordHash = await hashPassword('admin123');
-        const admin: StaffUser = {
-          id: generateId('usr'),
-          name: 'Brother Sheriff',
-          username: 'admin',
-          passwordHash,
-          role: 'admin',
-          active: true,
-          createdAt: new Date().toISOString(),
-          position: 'Store Administrator',
-          phone: '08012345678',
-        };
-        set({ users: [admin], seeded: true });
-      },
+  init: async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.user) {
+      const profile = await loadProfile(session.user.id, session.user.email ?? '');
+      set({ currentUserId: session.user.id, profile });
+    }
+    set({ ready: true });
 
-      login: async (username, password) => {
-        const hash = await hashPassword(password);
-        const user = get().users.find(
-          (u) => u.username.toLowerCase() === username.trim().toLowerCase()
-        );
-        if (!user) return { ok: false, error: 'User not found' };
-        if (!user.active) return { ok: false, error: 'This account has been deactivated' };
-        if (user.passwordHash !== hash) return { ok: false, error: 'Incorrect password' };
-        set({ currentUserId: user.id });
-        return { ok: true };
-      },
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const profile = await loadProfile(session.user.id, session.user.email ?? '');
+        set({ currentUserId: session.user.id, profile });
+      } else {
+        set({ currentUserId: null, profile: null, users: [] });
+      }
+    });
+  },
 
-      logout: () => set({ currentUserId: null }),
+  login: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return { ok: false, error: error?.message ?? 'Could not sign in' };
 
-      currentUser: () => {
-        const { users, currentUserId } = get();
-        return users.find((u) => u.id === currentUserId) ?? null;
-      },
+    const profile = await loadProfile(data.user.id, data.user.email ?? '');
+    if (!profile) {
+      await supabase.auth.signOut();
+      return { ok: false, error: 'No staff profile is set up for this account. Contact an admin.' };
+    }
+    if (!profile.active) {
+      await supabase.auth.signOut();
+      return { ok: false, error: 'This account has been deactivated' };
+    }
 
-      addStaff: async ({ name, username, password, role, position, phone }) => {
-        const exists = get().users.some(
-          (u) => u.username.toLowerCase() === username.trim().toLowerCase()
-        );
-        if (exists) return { ok: false, error: 'Username already taken' };
-        const passwordHash = await hashPassword(password);
-        const newUser: StaffUser = {
-          id: generateId('usr'),
-          name,
-          username: username.trim(),
-          passwordHash,
-          role,
-          active: true,
-          createdAt: new Date().toISOString(),
-          position,
-          phone,
-        };
-        set({ users: [...get().users, newUser] });
-        return { ok: true };
-      },
+    set({ currentUserId: data.user.id, profile });
+    return { ok: true };
+  },
 
-      updateStaff: (id, patch) => {
-        set({
-          users: get().users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
-        });
-      },
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ currentUserId: null, profile: null, users: [] });
+  },
 
-      resetPassword: async (id, newPassword) => {
-        const passwordHash = await hashPassword(newPassword);
-        set({
-          users: get().users.map((u) => (u.id === id ? { ...u, passwordHash } : u)),
-        });
-      },
+  currentUser: () => get().profile,
 
-      deleteStaff: (id) => {
-        set({ users: get().users.filter((u) => u.id !== id) });
-      },
-    }),
-    { name: 'gadgetstock-auth-v2' }
-  )
-);
+  fetchStaff: async () => {
+    const { data, error } = await supabase.from('staff_profiles').select('*').order('created_at', { ascending: true });
+    if (error || !data) return;
+    set({ users: (data as StaffProfileRow[]).map((row) => mapProfile(row, '')) });
+  },
+
+  addStaff: async ({ name, username, email, password, role, position, phone }) => {
+    const { data, error } = await supabase.functions.invoke('manage-staff', {
+      body: { action: 'create', email, password, name, username, role, position, phone },
+    });
+    if (error) return { ok: false, error: error.message };
+    if (data?.error) return { ok: false, error: data.error as string };
+
+    await get().fetchStaff();
+    return { ok: true };
+  },
+
+  updateStaff: async (id, patch) => {
+    const { error } = await supabase.from('staff_profiles').update(patch).eq('id', id);
+    if (error) return;
+
+    set((state) => ({
+      profile: state.currentUserId === id && state.profile ? { ...state.profile, ...patch } : state.profile,
+      users: state.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+    }));
+  },
+
+  resetPassword: async (id, newPassword) => {
+    const { data, error } = await supabase.functions.invoke('manage-staff', {
+      body: { action: 'resetPassword', userId: id, newPassword },
+    });
+    if (error) return { ok: false, error: error.message };
+    if (data?.error) return { ok: false, error: data.error as string };
+    return { ok: true };
+  },
+
+  deleteStaff: async (id) => {
+    const { data, error } = await supabase.functions.invoke('manage-staff', {
+      body: { action: 'delete', userId: id },
+    });
+    if (error || data?.error) return;
+    set((state) => ({ users: state.users.filter((u) => u.id !== id) }));
+  },
+}));

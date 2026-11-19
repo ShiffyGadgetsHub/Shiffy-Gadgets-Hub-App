@@ -62,7 +62,7 @@ export interface StaffUser {
   id: string;
   name: string;
   username: string;
-  passwordHash: string;
+  email: string;
   role: UserRole;
   active: boolean;
   createdAt: string;

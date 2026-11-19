@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useInventoryStore } from './store/inventoryStore';
@@ -26,13 +26,14 @@ import LogoutPage from './pages/LogoutPage';
 import ReceiptPage from './pages/ReceiptPage';
 
 export default function App() {
-  const ensureSeeded = useAuthStore((s) => s.ensureSeeded);
-  const seedDemoDataIfEmpty = useInventoryStore((s) => s.seedDemoDataIfEmpty);
+  const init = useAuthStore((s) => s.init);
+  const authReady = useAuthStore((s) => s.ready);
+  const currentUserId = useAuthStore((s) => s.currentUserId);
+  const loadInventory = useInventoryStore((s) => s.loadAll);
   const seedCatalog = useCatalogStore((s) => s.seedIfEmpty);
   const syncLatestCatalog = useCatalogStore((s) => s.syncLatestCatalog);
   const seedNotifications = useNotificationStore((s) => s.seedIfEmpty);
   const theme = useUIStore((s) => s.theme);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -42,13 +43,14 @@ export default function App() {
     seedCatalog();
     syncLatestCatalog();
     seedNotifications();
-    ensureSeeded().then(() => {
-      seedDemoDataIfEmpty();
-      setReady(true);
-    });
-  }, [ensureSeeded, seedDemoDataIfEmpty, seedCatalog, syncLatestCatalog, seedNotifications]);
+    init();
+  }, [init, seedCatalog, syncLatestCatalog, seedNotifications]);
 
-  if (!ready) {
+  useEffect(() => {
+    if (currentUserId) loadInventory();
+  }, [currentUserId, loadInventory]);
+
+  if (!authReady) {
     return <div className="flex h-screen items-center justify-center bg-surface text-ink-soft">Loading…</div>;
   }
 
