@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Plus, KeyRound, Trash2, UserCog } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import Card from '../ui/Card';
@@ -24,11 +24,16 @@ function PasswordField({ value, onChange, placeholder }: { value: string; onChan
 
 export default function StaffAccountsPanel() {
   const users = useAuthStore((s) => s.users);
+  const fetchStaff = useAuthStore((s) => s.fetchStaff);
   const addStaff = useAuthStore((s) => s.addStaff);
   const updateStaff = useAuthStore((s) => s.updateStaff);
   const resetPassword = useAuthStore((s) => s.resetPassword);
   const deleteStaff = useAuthStore((s) => s.deleteStaff);
   const currentUser = useAuthStore((s) => s.currentUser());
+
+  useEffect(() => {
+    fetchStaff();
+  }, [fetchStaff]);
 
   const [addOpen, setAddOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState<StaffUser | null>(null);

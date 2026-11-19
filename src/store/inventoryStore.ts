@@ -133,7 +133,7 @@ function announceSale(itemName: string, customerName: string, transactions: Tran
 }
 
 function announceError(message: string) {
-  useToastStore.getState().push({ title: 'Something went wrong', message });
+  useToastStore.getState().push({ title: 'Something went wrong', message, tone: 'warning' });
 }
 
 export interface AddStockLine {

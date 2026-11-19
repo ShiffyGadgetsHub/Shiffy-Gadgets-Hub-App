@@ -1,6 +1,27 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
+import { useToastStore } from './toastStore';
 import type { StaffUser, UserRole } from '../types';
+
+/**
+ * supabase.functions.invoke() only gives a generic "non-2xx status code"
+ * message on error — the function's actual JSON error body is on
+ * error.context (a Response) and has to be read separately.
+ */
+async function functionErrorMessage(error: unknown, fallback: string): Promise<string> {
+  if (error && typeof error === 'object' && 'context' in error) {
+    const context = (error as { context?: Response }).context;
+    if (context) {
+      try {
+        const body = await context.json();
+        if (body?.error) return body.error as string;
+      } catch {
+        // fall through to generic message below
+      }
+    }
+  }
+  return error instanceof Error ? error.message : fallback;
+}
 
 interface StaffProfileRow {
   id: string;
@@ -125,7 +146,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const { data, error } = await supabase.functions.invoke('manage-staff', {
       body: { action: 'create', email, password, name, username, role, position, phone },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: await functionErrorMessage(error, 'Could not add staff') };
     if (data?.error) return { ok: false, error: data.error as string };
 
     await get().fetchStaff();
@@ -146,7 +167,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const { data, error } = await supabase.functions.invoke('manage-staff', {
       body: { action: 'resetPassword', userId: id, newPassword },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: await functionErrorMessage(error, 'Could not reset password') };
     if (data?.error) return { ok: false, error: data.error as string };
     return { ok: true };
   },
@@ -155,7 +176,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const { data, error } = await supabase.functions.invoke('manage-staff', {
       body: { action: 'delete', userId: id },
     });
-    if (error || data?.error) return;
+    if (error || data?.error) {
+      const message = error ? await functionErrorMessage(error, 'Could not remove staff') : (data.error as string);
+      useToastStore.getState().push({ title: 'Could not remove staff', message, tone: 'warning' });
+      return;
+    }
     set((state) => ({ users: state.users.filter((u) => u.id !== id) }));
   },
 }));
