@@ -53,8 +53,13 @@ export default function App() {
       loadInventory();
       loadInbox();
       loadOutbox();
+      // Re-fetch catalog once signed in: brands/item_names require auth, so
+      // if the very first load (which runs regardless of auth, for the
+      // public landing page) happened before login, those two were empty —
+      // this picks them up now that we're actually authenticated.
+      loadCatalog();
     }
-  }, [currentUserId, loadInventory, loadInbox, loadOutbox]);
+  }, [currentUserId, loadInventory, loadInbox, loadOutbox, loadCatalog]);
 
   if (!authReady) {
     return <div className="flex h-screen items-center justify-center bg-surface text-ink-soft">Loading…</div>;

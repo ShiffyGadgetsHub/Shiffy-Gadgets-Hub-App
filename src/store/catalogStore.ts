@@ -65,18 +65,23 @@ export const useCatalogStore = create<CatalogState>()((set, get) => ({
   loaded: false,
 
   loadAll: async () => {
+    // categories are public (shown on the landing page before login), but
+    // brands/item_names require auth — handled independently so an
+    // expected permission-denied on the latter two (e.g. not signed in
+    // yet) doesn't wipe out a successful categories fetch. This also
+    // means this is safe to call again once auth resolves, to pick up
+    // brands/item_names that failed the first time pre-login.
     const [catRes, brandRes, itemRes] = await Promise.all([
       supabase.from('categories').select('*').order('created_on', { ascending: true }),
       supabase.from('brands').select('*'),
       supabase.from('item_names').select('*'),
     ]);
-    if (catRes.error || brandRes.error || itemRes.error) return;
-    set({
-      categories: (catRes.data as CategoryRow[]).map(mapCategory),
-      brands: (brandRes.data as BrandRow[]).map(mapBrand),
-      itemNames: (itemRes.data as ItemNameRow[]).map(mapItemName),
-      loaded: true,
-    });
+    const patch: Partial<CatalogState> = {};
+    if (!catRes.error) patch.categories = (catRes.data as CategoryRow[]).map(mapCategory);
+    if (!brandRes.error) patch.brands = (brandRes.data as BrandRow[]).map(mapBrand);
+    if (!itemRes.error) patch.itemNames = (itemRes.data as ItemNameRow[]).map(mapItemName);
+    if (!catRes.error && !brandRes.error && !itemRes.error) patch.loaded = true;
+    set(patch);
   },
 
   addCategory: async (name) => {
