@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
+import { useToastStore } from './toastStore';
 import type { StoreSettings } from '../types';
+
+function announceError(message: string) {
+  useToastStore.getState().push({ title: 'Could not save settings', message, tone: 'warning' });
+}
 
 interface SettingsRow {
   store_name: string;
@@ -85,7 +90,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (patch.salesResetAt !== undefined) dbPatch.sales_reset_at = patch.salesResetAt || null;
 
     const { error } = await supabase.from('store_settings').update(dbPatch).eq('id', true);
-    if (error) return;
+    if (error) {
+      announceError(error.message);
+      return;
+    }
     set({ settings: { ...get().settings, ...patch } });
   },
 
@@ -97,13 +105,19 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     // updateSettings treats `undefined` fields as "leave untouched", so clearing
     // needs a direct call rather than going through the generic patch helper.
     const { error } = await supabase.from('store_settings').update({ sales_reset_at: null }).eq('id', true);
-    if (error) return;
+    if (error) {
+      announceError(error.message);
+      return;
+    }
     set({ settings: { ...get().settings, salesResetAt: undefined } });
   },
 
   dismissYearPrompt: async (year) => {
     const { error } = await supabase.from('store_settings').update({ year_prompt_dismissed_year: year }).eq('id', true);
-    if (error) return;
+    if (error) {
+      announceError(error.message);
+      return;
+    }
     set({ settings: { ...get().settings, yearPromptDismissedYear: year } });
   },
 }));
