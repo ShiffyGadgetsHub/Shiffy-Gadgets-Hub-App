@@ -85,6 +85,8 @@ export interface StoreSettings {
   bankAccountName?: string;
   /** Total Sales only counts completed sales after this point, if set. Reset/restored from Settings. */
   salesResetAt?: string;
+  /** The year an admin last dismissed the new-year reset reminder ("remind me later"). */
+  yearPromptDismissedYear?: number;
 }
 
 export interface CategoryRecord {

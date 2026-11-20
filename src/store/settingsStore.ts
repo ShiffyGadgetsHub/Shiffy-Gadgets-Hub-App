@@ -15,6 +15,7 @@ interface SettingsRow {
   bank_account_number: string | null;
   bank_account_name: string | null;
   sales_reset_at: string | null;
+  year_prompt_dismissed_year: number | null;
 }
 
 function mapSettings(r: SettingsRow): StoreSettings {
@@ -31,6 +32,7 @@ function mapSettings(r: SettingsRow): StoreSettings {
     bankAccountNumber: r.bank_account_number ?? undefined,
     bankAccountName: r.bank_account_name ?? undefined,
     salesResetAt: r.sales_reset_at ?? undefined,
+    yearPromptDismissedYear: r.year_prompt_dismissed_year ?? undefined,
   };
 }
 
@@ -54,6 +56,7 @@ interface SettingsState {
   updateSettings: (patch: Partial<StoreSettings>) => Promise<void>;
   resetTotalSales: () => Promise<void>;
   restoreTotalSales: () => Promise<void>;
+  dismissYearPrompt: (year: number) => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
@@ -96,5 +99,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     const { error } = await supabase.from('store_settings').update({ sales_reset_at: null }).eq('id', true);
     if (error) return;
     set({ settings: { ...get().settings, salesResetAt: undefined } });
+  },
+
+  dismissYearPrompt: async (year) => {
+    const { error } = await supabase.from('store_settings').update({ year_prompt_dismissed_year: year }).eq('id', true);
+    if (error) return;
+    set({ settings: { ...get().settings, yearPromptDismissedYear: year } });
   },
 }));

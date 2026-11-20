@@ -24,6 +24,7 @@ import Card from '../components/ui/Card';
 import Badge, { paymentStatusTone } from '../components/ui/Badge';
 import ProductIcon from '../components/ui/ProductIcon';
 import FilterSelect from '../components/ui/FilterSelect';
+import NewYearPromptModal from '../components/settings/NewYearPromptModal';
 import { useBasePath, useIsStaffView } from '../lib/useBasePath';
 
 const AREA_COLOR = '#0a6cff';
@@ -57,6 +58,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
+      {!isStaff && <NewYearPromptModal />}
       <Card className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white">
         <div>
           <p className="text-base font-semibold sm:text-lg">
