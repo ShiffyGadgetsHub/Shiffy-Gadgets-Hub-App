@@ -38,7 +38,10 @@ export default function DashboardPage() {
   const isStaff = useIsStaffView();
   const [range, setRange] = useState<SalesRange>('daily');
 
-  const stats = useMemo(() => getDashboardStats(items, transactions), [items, transactions]);
+  const stats = useMemo(
+    () => getDashboardStats(items, transactions, settings.salesResetAt),
+    [items, transactions, settings.salesResetAt]
+  );
   const lowStock = useMemo(() => getLowStock(items, settings.lowStockThreshold), [items, settings.lowStockThreshold]);
   const series = useMemo(() => buildSalesSeries(transactions, range, isStaff ? 'count' : 'amount'), [transactions, range, isStaff]);
   const newVsUsed = useMemo(() => {
@@ -71,7 +74,17 @@ export default function DashboardPage() {
         <StatCard label="Out / Outstanding Return" value={stats.outPending} sublabel={`${stats.outPending} active transaction${stats.outPending === 1 ? '' : 's'}`} icon={Clock} tone="amber" />
         <StatCard label="Outstanding Balance" value={formatCurrency(stats.outstandingBalance, settings.currencySymbol)} sublabel="Unpaid + part-paid items" icon={Wallet} tone="rose" />
         {!isStaff && (
-          <StatCard label="Total Sales" value={formatCurrency(stats.totalSales, settings.currencySymbol)} sublabel={`Stock on hand worth ${formatCurrency(stats.stockWorth, settings.currencySymbol)}`} icon={TrendingUp} tone="emerald" />
+          <StatCard
+            label="Total Sales"
+            value={formatCurrency(stats.totalSales, settings.currencySymbol)}
+            sublabel={
+              settings.salesResetAt
+                ? `Reset on ${new Date(settings.salesResetAt).toLocaleDateString()} — restore anytime in Settings`
+                : `Stock on hand worth ${formatCurrency(stats.stockWorth, settings.currencySymbol)}`
+            }
+            icon={TrendingUp}
+            tone="emerald"
+          />
         )}
       </div>
 

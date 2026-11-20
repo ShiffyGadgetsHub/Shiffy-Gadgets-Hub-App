@@ -14,6 +14,7 @@ interface SettingsRow {
   bank_name: string | null;
   bank_account_number: string | null;
   bank_account_name: string | null;
+  sales_reset_at: string | null;
 }
 
 function mapSettings(r: SettingsRow): StoreSettings {
@@ -29,6 +30,7 @@ function mapSettings(r: SettingsRow): StoreSettings {
     bankName: r.bank_name ?? undefined,
     bankAccountNumber: r.bank_account_number ?? undefined,
     bankAccountName: r.bank_account_name ?? undefined,
+    salesResetAt: r.sales_reset_at ?? undefined,
   };
 }
 
@@ -50,6 +52,8 @@ interface SettingsState {
   loaded: boolean;
   loadSettings: () => Promise<void>;
   updateSettings: (patch: Partial<StoreSettings>) => Promise<void>;
+  resetTotalSales: () => Promise<void>;
+  restoreTotalSales: () => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
@@ -75,9 +79,22 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (patch.bankName !== undefined) dbPatch.bank_name = patch.bankName || null;
     if (patch.bankAccountNumber !== undefined) dbPatch.bank_account_number = patch.bankAccountNumber || null;
     if (patch.bankAccountName !== undefined) dbPatch.bank_account_name = patch.bankAccountName || null;
+    if (patch.salesResetAt !== undefined) dbPatch.sales_reset_at = patch.salesResetAt || null;
 
     const { error } = await supabase.from('store_settings').update(dbPatch).eq('id', true);
     if (error) return;
     set({ settings: { ...get().settings, ...patch } });
+  },
+
+  resetTotalSales: async () => {
+    await get().updateSettings({ salesResetAt: new Date().toISOString() });
+  },
+
+  restoreTotalSales: async () => {
+    // updateSettings treats `undefined` fields as "leave untouched", so clearing
+    // needs a direct call rather than going through the generic patch helper.
+    const { error } = await supabase.from('store_settings').update({ sales_reset_at: null }).eq('id', true);
+    if (error) return;
+    set({ settings: { ...get().settings, salesResetAt: undefined } });
   },
 }));

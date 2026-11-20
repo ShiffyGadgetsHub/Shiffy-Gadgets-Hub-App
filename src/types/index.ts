@@ -83,6 +83,8 @@ export interface StoreSettings {
   bankName?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  /** Total Sales only counts completed sales after this point, if set. Reset/restored from Settings. */
+  salesResetAt?: string;
 }
 
 export interface CategoryRecord {

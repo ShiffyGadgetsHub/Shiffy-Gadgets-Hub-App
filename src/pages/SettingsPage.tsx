@@ -1,6 +1,21 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Store, Users, Receipt, Camera, Eye } from 'lucide-react';
+import {
+  User,
+  Store,
+  Users,
+  Receipt,
+  Camera,
+  Eye,
+  FileSpreadsheet,
+  RotateCcw,
+  Download,
+  TrendingUp,
+  Wallet,
+  Package,
+  BarChart3,
+  AlertCircle,
+} from 'lucide-react';
 import logoMark from '../assets/logo-mark.png';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -9,14 +24,18 @@ import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Avatar from '../components/ui/Avatar';
+import StatCard from '../components/ui/StatCard';
 import StaffAccountsPanel from '../components/settings/StaffAccountsPanel';
-import { FieldWrap, Input, NumberInput } from '../components/ui/Field';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { FieldWrap, Input, NumberInput, Select } from '../components/ui/Field';
 import EmptyState from '../components/ui/EmptyState';
 import { parseNumberInput, formatCurrency, formatDateTime } from '../lib/format';
 import { getCompletedTransactions } from '../lib/stats';
+import { getAvailableYears, computeYearStats } from '../lib/yearStats';
+import { downloadYearEndReport } from '../lib/yearEndReport';
 import { useIsStaffView } from '../lib/useBasePath';
 
-type Tab = 'general' | 'store' | 'staff' | 'receipt';
+type Tab = 'general' | 'store' | 'staff' | 'receipt' | 'reports';
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('general');
@@ -25,10 +44,28 @@ export default function SettingsPage() {
   const updateStaff = useAuthStore((s) => s.updateStaff);
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const resetTotalSales = useSettingsStore((s) => s.resetTotalSales);
+  const restoreTotalSales = useSettingsStore((s) => s.restoreTotalSales);
+  const items = useInventoryStore((s) => s.items);
   const transactions = useInventoryStore((s) => s.transactions);
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
+
+  const availableYears = useMemo(() => getAvailableYears(transactions), [transactions]);
+  const [reportYear, setReportYear] = useState(() => availableYears[0] ?? new Date().getFullYear());
+  const reportStats = useMemo(() => computeYearStats(items, transactions, reportYear), [items, transactions, reportYear]);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  async function handleDownloadReport() {
+    setGeneratingReport(true);
+    try {
+      await downloadYearEndReport(reportYear, items, transactions, settings.storeName, settings.currencySymbol);
+    } finally {
+      setGeneratingReport(false);
+    }
+  }
 
   const [profile, setProfile] = useState({
     username: user?.username ?? '',
@@ -99,6 +136,7 @@ export default function SettingsPage() {
     { id: 'store', label: 'Store', icon: Store },
     { id: 'staff', label: 'Staff Accounts', icon: Users },
     { id: 'receipt', label: 'Receipt Info', icon: Receipt },
+    { id: 'reports', label: 'Year-End Reports', icon: FileSpreadsheet },
   ];
   const tabs = isStaff ? allTabs.filter((t) => t.id === 'general') : allTabs;
 
@@ -185,6 +223,45 @@ export default function SettingsPage() {
             <Button onClick={saveStore}>Save Settings</Button>
             {saved && <span className="text-sm text-emerald-600">Saved!</span>}
           </div>
+        </Card>
+      )}
+
+      {tab === 'store' && (
+        <Card className="max-w-xl">
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
+            <RotateCcw size={15} /> Reset Total Sales
+          </h2>
+          <p className="mb-4 text-xs text-ink-faint">
+            Starts the Dashboard's "Total Sales" figure fresh for a new year. Nothing is deleted — every past sale stays on record
+            and in your Year-End Reports — this only changes what the running total on the Dashboard counts from.
+          </p>
+
+          {settings.salesResetAt ? (
+            <div className="space-y-3">
+              <p className="rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-700 dark:bg-amber-500/10">
+                Total Sales has counted from zero since <strong>{formatDateTime(settings.salesResetAt)}</strong>.
+              </p>
+              <Button variant="outline" onClick={restoreTotalSales}>
+                Restore Previous Total
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={() => setResetConfirmOpen(true)}>
+              Reset Total Sales
+            </Button>
+          )}
+
+          <ConfirmDialog
+            open={resetConfirmOpen}
+            title="Reset Total Sales?"
+            message="The Dashboard's Total Sales will show ₦0 and start counting fresh from right now. All past sales stay fully on record and can be restored to the total at any time."
+            confirmLabel="Reset"
+            onCancel={() => setResetConfirmOpen(false)}
+            onConfirm={() => {
+              resetTotalSales();
+              setResetConfirmOpen(false);
+            }}
+          />
         </Card>
       )}
 
@@ -300,6 +377,64 @@ export default function SettingsPage() {
                 </table>
               </div>
             )}
+          </Card>
+        </div>
+      )}
+
+      {tab === 'reports' && (
+        <div className="space-y-5">
+          <Card className="max-w-2xl">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
+              <FileSpreadsheet size={15} /> Year-End Wrap
+            </h2>
+            <p className="mb-5 text-xs text-ink-faint">
+              Pick any year — including past years — to see a quick summary here, or download the full report: a dashboard sheet
+              (revenue, profit, best month, top items, top customers, staff performance, insights) plus a second sheet with every
+              transaction from that year, as an Excel file.
+            </p>
+
+            <div className="max-w-xs">
+              <FieldWrap label="Year">
+                <Select value={reportYear} onChange={(e) => setReportYear(Number(e.target.value))}>
+                  {availableYears.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </Select>
+              </FieldWrap>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <StatCard label="Total Revenue" value={formatCurrency(reportStats.revenue, settings.currencySymbol)} icon={TrendingUp} tone="emerald" />
+              <StatCard label="Total Profit" value={formatCurrency(reportStats.profit, settings.currencySymbol)} icon={Wallet} tone="brand" />
+              <StatCard label="Units Sold" value={reportStats.unitsSold} icon={Package} tone="violet" />
+              <StatCard
+                label="Avg. Sale Value"
+                value={formatCurrency(reportStats.avgSaleValue, settings.currencySymbol)}
+                icon={BarChart3}
+                tone="brand"
+              />
+              <StatCard
+                label="Outstanding (from this year)"
+                value={formatCurrency(reportStats.outstandingFromYear, settings.currencySymbol)}
+                icon={AlertCircle}
+                tone="amber"
+              />
+              <StatCard
+                label="Best Month"
+                value={reportStats.bestMonth ? reportStats.bestMonth.label : '—'}
+                sublabel={reportStats.bestMonth ? formatCurrency(reportStats.bestMonth.revenue, settings.currencySymbol) : undefined}
+                icon={TrendingUp}
+                tone="emerald"
+              />
+            </div>
+
+            <div className="mt-6">
+              <Button icon={<Download size={15} />} onClick={handleDownloadReport} disabled={generatingReport}>
+                {generatingReport ? 'Generating…' : `Download ${reportYear} Year-End Report`}
+              </Button>
+            </div>
           </Card>
         </div>
       )}

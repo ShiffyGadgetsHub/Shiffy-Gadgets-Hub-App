@@ -105,8 +105,10 @@ export function getCompletedTransactions(transactions: Transaction[]) {
   return transactions.filter((t) => t.status === 'completed');
 }
 
-export function getTotalSales(transactions: Transaction[]) {
-  return getCompletedTransactions(transactions).reduce((sum, t) => sum + t.totalAmount, 0);
+export function getTotalSales(transactions: Transaction[], resetAt?: string) {
+  const completed = getCompletedTransactions(transactions);
+  const counted = resetAt ? completed.filter((t) => (t.completedDate ?? '') > resetAt) : completed;
+  return counted.reduce((sum, t) => sum + t.totalAmount, 0);
 }
 
 export function getStockWorth(items: InventoryItem[]) {
@@ -122,7 +124,7 @@ export function getProfit(items: InventoryItem[], transactions: Transaction[]) {
   }, 0);
 }
 
-export function getDashboardStats(items: InventoryItem[], transactions: Transaction[]) {
+export function getDashboardStats(items: InventoryItem[], transactions: Transaction[], salesResetAt?: string) {
   const inStock = getItemsInStock(items);
   const pending = getPendingTransactions(transactions);
   return {
@@ -131,7 +133,7 @@ export function getDashboardStats(items: InventoryItem[], transactions: Transact
     usedInStock: inStock.filter((i) => i.condition === 'Used').length,
     outPending: pending.length,
     outstandingBalance: getOutstandingBalance(transactions),
-    totalSales: getTotalSales(transactions),
+    totalSales: getTotalSales(transactions, salesResetAt),
     stockWorth: getStockWorth(items),
     itemsSold: getCompletedTransactions(transactions).length,
     profit: getProfit(items, transactions),
