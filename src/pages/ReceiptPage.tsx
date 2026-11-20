@@ -113,15 +113,15 @@ export default function ReceiptPage() {
               <p className="text-[34px] font-black leading-none tracking-tight">INVOICE</p>
               <p className="mt-2 text-xs font-medium uppercase tracking-[0.25em] text-white/60">{txn.receiptNo}</p>
             </div>
-            <div className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+            <div className="flex items-center gap-3 rounded-xl bg-white/95 px-3 py-2 shadow-lg">
               {settings.logo ? (
-                <img src={settings.logo} alt={settings.storeName} className="h-9 w-9 rounded-lg object-cover" />
+                <img src={settings.logo} alt={settings.storeName} className="h-14 w-14 rounded-lg object-cover" />
               ) : (
-                <img src={logoMark} alt="" className="h-9 w-9 object-contain" />
+                <img src={logoMark} alt="" className="h-14 w-14 object-contain" />
               )}
               <div className="text-right">
-                <p className="text-sm font-bold leading-tight">{settings.storeName}</p>
-                <p className="text-[10px] leading-tight text-white/60">{settings.address}</p>
+                <p className="text-sm font-bold leading-tight text-[#0a1a3f]">{settings.storeName}</p>
+                <p className="max-w-[140px] text-[10px] leading-tight text-[#5b6072]">{settings.address}</p>
               </div>
             </div>
           </div>
