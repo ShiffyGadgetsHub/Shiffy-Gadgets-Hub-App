@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, LayoutDashboard, PackageSearch, Wallet, ShieldCheck, Users } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
-import { setArea, type Area } from '../lib/area';
+import { setArea, getAccessKey, type Area } from '../lib/area';
 import { Input, Label } from '../components/ui/Field';
 import Button from '../components/ui/Button';
 import logoMark from '../assets/logo-mark.png';
@@ -32,6 +32,7 @@ export default function LoginPage({ area }: { area: Area }) {
   const currentUser = useAuthStore((s) => s.currentUser());
   const storeName = useSettingsStore((s) => s.settings.storeName);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const copy = COPY[area];
 
   const [email, setEmail] = useState('');
@@ -43,6 +44,11 @@ export default function LoginPage({ area }: { area: Area }) {
   useEffect(() => {
     setArea(area);
   }, [area]);
+
+  // Not published anywhere — keeps casual visitors/bots/search engines from
+  // ever seeing this form exists. Doesn't replace real auth, just obscurity.
+  const requiredKey = getAccessKey(area);
+  if (requiredKey && searchParams.get('key') !== requiredKey) return <Navigate to="/" replace />;
 
   if (currentUserId) return <Navigate to={currentUser?.role === 'admin' ? '/admin' : '/staff'} replace />;
 

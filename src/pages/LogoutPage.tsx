@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { loginPathFor } from '../lib/area';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -24,7 +25,7 @@ export default function LogoutPage() {
           <Button
             variant="danger"
             onClick={() => {
-              const loginPath = currentUser?.role === 'admin' ? '/admin/login' : '/staff/login';
+              const loginPath = loginPathFor(currentUser?.role === 'admin' ? 'admin' : 'staff');
               logout();
               navigate(loginPath, { replace: true });
             }}

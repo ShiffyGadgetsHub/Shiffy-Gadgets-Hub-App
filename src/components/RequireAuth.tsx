@@ -12,7 +12,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const currentUserId = useAuthStore((s) => s.currentUserId);
   const role = useAuthStore((s) => s.currentUser()?.role);
-  if (!currentUserId) return <Navigate to="/admin/login" replace />;
+  if (!currentUserId) return <Navigate to={loginPathFor('admin')} replace />;
   if (role !== 'admin') return <Navigate to="/staff" replace />;
   return <>{children}</>;
 }

@@ -23,6 +23,19 @@ export function setArea(area: Area) {
   sessionStorage.setItem(STORAGE_KEY, area);
 }
 
+/**
+ * A not-published-anywhere access key required in the URL to even see the
+ * admin/staff login form — this is obscurity (keeps casual visitors, bots
+ * and search engines from finding a login page exists at all), not real
+ * access control. Anyone who inspects the built JS could still find the
+ * expected value; actual account security is still entirely Supabase Auth.
+ */
+export function getAccessKey(area: Area): string | undefined {
+  return area === 'staff' ? import.meta.env.VITE_STAFF_ACCESS_KEY : import.meta.env.VITE_ADMIN_ACCESS_KEY;
+}
+
 export function loginPathFor(area: Area): string {
-  return area === 'staff' ? '/staff/login' : '/admin/login';
+  const base = area === 'staff' ? '/staff/login' : '/admin/login';
+  const key = getAccessKey(area);
+  return key ? `${base}?key=${encodeURIComponent(key)}` : base;
 }
