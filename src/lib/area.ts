@@ -34,8 +34,15 @@ export function getAccessKey(area: Area): string | undefined {
   return area === 'staff' ? import.meta.env.VITE_STAFF_ACCESS_KEY : import.meta.env.VITE_ADMIN_ACCESS_KEY;
 }
 
+/**
+ * Deliberately the *bare* path, with no key appended — every internal
+ * redirect (RequireAuth, RequireAdmin, logging out) goes through this, and
+ * if it auto-added the key, visiting the plain, guessable /admin or /staff
+ * path while signed out would auto-forward anyone straight to a working,
+ * correctly-keyed login form, defeating the entire point of the key. The
+ * key must only ever come from a link the user already has saved/was given
+ * directly — never injected by the app's own navigation.
+ */
 export function loginPathFor(area: Area): string {
-  const base = area === 'staff' ? '/staff/login' : '/admin/login';
-  const key = getAccessKey(area);
-  return key ? `${base}?key=${encodeURIComponent(key)}` : base;
+  return area === 'staff' ? '/staff/login' : '/admin/login';
 }
