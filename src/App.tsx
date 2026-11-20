@@ -64,7 +64,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<LoginPage area="admin" />} />
+        <Route path="/staff/login" element={<LoginPage area="staff" />} />
         <Route
           path="/logout"
           element={

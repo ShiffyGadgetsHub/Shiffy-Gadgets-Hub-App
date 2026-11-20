@@ -1,24 +1,48 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LayoutDashboard, PackageSearch, Wallet } from 'lucide-react';
+import { Eye, EyeOff, LayoutDashboard, PackageSearch, Wallet, ShieldCheck, Users } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { setArea, type Area } from '../lib/area';
 import { Input, Label } from '../components/ui/Field';
 import Button from '../components/ui/Button';
 import logoMark from '../assets/logo-mark.png';
 
-export default function LoginPage() {
+const COPY: Record<Area, { badge: string; icon: typeof ShieldCheck; heading: string; subheading: string; title: string }> = {
+  admin: {
+    badge: 'Administration Login Access',
+    icon: ShieldCheck,
+    heading: 'Run your gadget store from one simple dashboard.',
+    subheading: 'Full access — inventory, pricing, categories, staff accounts and every sale.',
+    title: 'Administration sign in',
+  },
+  staff: {
+    badge: 'Staff Login Access',
+    icon: Users,
+    heading: 'Track stock, sales and pending pickups.',
+    subheading: 'Everything you need for your shift — stock, sales and outstanding balances.',
+    title: 'Staff sign in',
+  },
+};
+
+export default function LoginPage({ area }: { area: Area }) {
   const login = useAuthStore((s) => s.login);
+  const logout = useAuthStore((s) => s.logout);
   const currentUserId = useAuthStore((s) => s.currentUserId);
   const currentUser = useAuthStore((s) => s.currentUser());
   const storeName = useSettingsStore((s) => s.settings.storeName);
   const navigate = useNavigate();
+  const copy = COPY[area];
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setArea(area);
+  }, [area]);
 
   if (currentUserId) return <Navigate to={currentUser?.role === 'admin' ? '/admin' : '/staff'} replace />;
 
@@ -27,12 +51,19 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     const result = await login(email, password);
-    setLoading(false);
     if (!result.ok) {
+      setLoading(false);
       setError(result.error ?? 'Could not sign in');
       return;
     }
     const loggedInUser = useAuthStore.getState().currentUser();
+    if (area === 'admin' && loggedInUser?.role !== 'admin') {
+      await logout();
+      setLoading(false);
+      setError('This account does not have administrator access. Use the staff login instead.');
+      return;
+    }
+    setLoading(false);
     navigate(loggedInUser?.role === 'admin' ? '/admin' : '/staff', { replace: true });
   }
 
@@ -50,13 +81,11 @@ export default function LoginPage() {
         </div>
 
         <div className="relative space-y-7">
-          <h2 className="text-3xl font-bold leading-tight">
-            Run your gadget store from one simple dashboard.
-          </h2>
-          <p className="max-w-sm text-sm text-white/75">
-            Track stock, part-payments, pending pickups and sales for every phone, laptop and
-            accessory — new or used — in one place.
-          </p>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/90">
+            <copy.icon size={13} /> {copy.badge}
+          </span>
+          <h2 className="text-3xl font-bold leading-tight">{copy.heading}</h2>
+          <p className="max-w-sm text-sm text-white/75">{copy.subheading}</p>
           <div className="space-y-4 pt-2">
             {[
               { icon: LayoutDashboard, text: 'Real-time stock & sales analytics' },
@@ -85,7 +114,10 @@ export default function LoginPage() {
             <span className="text-lg font-bold text-ink">{storeName}</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-ink">Welcome back</h1>
+          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+            <copy.icon size={13} /> {copy.badge}
+          </span>
+          <h1 className="text-2xl font-bold text-ink">{copy.title}</h1>
           <p className="mt-1.5 text-sm text-ink-soft">Sign in to manage your store.</p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4">
@@ -96,7 +128,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@shiffygadgetshub.com"
+                placeholder={area === 'admin' ? 'admin@shiffygadgetshub.com' : 'staff@shiffygadgetshub.com'}
               />
             </div>
             <div>

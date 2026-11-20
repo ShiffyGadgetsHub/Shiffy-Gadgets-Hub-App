@@ -7,6 +7,7 @@ import Card from '../components/ui/Card';
 export default function LogoutPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const currentUser = useAuthStore((s) => s.currentUser());
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
@@ -23,8 +24,9 @@ export default function LogoutPage() {
           <Button
             variant="danger"
             onClick={() => {
+              const loginPath = currentUser?.role === 'admin' ? '/admin/login' : '/staff/login';
               logout();
-              navigate('/login', { replace: true });
+              navigate(loginPath, { replace: true });
             }}
           >
             Yes
