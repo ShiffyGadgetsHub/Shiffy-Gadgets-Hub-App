@@ -1,23 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
-import { useToastStore } from './toastStore';
 import type { InboxMessage, PushMessage } from '../types';
-
-/**
- * Surfaces a visible toast if a realtime channel fails to connect instead
- * of silently falling back to "only updates on refresh" with no clue why.
- */
-function onChannelStatus(label: string) {
-  return (status: string, err?: Error) => {
-    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-      useToastStore.getState().push({
-        title: 'Something went wrong',
-        message: `Live updates for ${label} aren't connected${err ? `: ${err.message}` : ''}. Refresh to see the latest.`,
-        tone: 'warning',
-      });
-    }
-  };
-}
 
 interface ActivityRow {
   id: string;
@@ -89,7 +72,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
         const row = mapActivity(payload.new as ActivityRow);
         set((state) => (state.inbox.some((m) => m.id === row.id) ? state : { inbox: [row, ...state.inbox] }));
       })
-      .subscribe(onChannelStatus('notifications'));
+      .subscribe();
   },
 
   markRead: async (id) => {
