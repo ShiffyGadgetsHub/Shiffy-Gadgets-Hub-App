@@ -48,6 +48,7 @@ export default function StaffAccountsPanel() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'staff'>('staff');
   const [newPassword, setNewPassword] = useState('');
+  const [resetError, setResetError] = useState('');
 
   async function submitAdd() {
     if (!email.toLowerCase().endsWith(STAFF_EMAIL_DOMAIN)) {
@@ -154,14 +155,23 @@ export default function StaffAccountsPanel() {
 
       <Modal
         open={!!resetTarget}
-        onClose={() => setResetTarget(null)}
+        onClose={() => {
+          setResetTarget(null);
+          setNewPassword('');
+          setResetError('');
+        }}
         title={`Reset password — ${resetTarget?.name}`}
         footer={
           <Button
             onClick={async () => {
               if (resetTarget && newPassword) {
-                await resetPassword(resetTarget.id, newPassword);
+                const res = await resetPassword(resetTarget.id, newPassword);
+                if (!res.ok) {
+                  setResetError(res.error ?? 'Could not reset password');
+                  return;
+                }
                 setNewPassword('');
+                setResetError('');
                 setResetTarget(null);
               }
             }}
@@ -171,8 +181,9 @@ export default function StaffAccountsPanel() {
         }
       >
         <FieldWrap label="New password" required>
-          <PasswordField value={newPassword} onChange={setNewPassword} placeholder="Minimum 4 characters" />
+          <PasswordField value={newPassword} onChange={setNewPassword} placeholder="Minimum 8 characters" />
         </FieldWrap>
+        {resetError && <p className="mt-2 text-sm text-rose-600">{resetError}</p>}
       </Modal>
 
       <ConfirmDialog
