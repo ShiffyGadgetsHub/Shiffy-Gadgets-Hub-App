@@ -167,6 +167,63 @@ function computePaymentStatus(totalAmount: number, amountPaid: number): PaymentS
   return 'partial';
 }
 
+/**
+ * Keeps every signed-in client (admin and staff, on any device/tab) in
+ * sync live — without this, a release/sale/return/payment made by one
+ * person only shows up for everyone else after a manual page refresh.
+ */
+let inventoryRealtimeSubscribed = false;
+
+function subscribeToInventoryRealtime(set: (fn: (state: InventoryState) => Partial<InventoryState>) => void) {
+  if (inventoryRealtimeSubscribed) return;
+  inventoryRealtimeSubscribed = true;
+
+  supabase
+    .channel('inventory_items_changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inventory_items' }, (payload) => {
+      const row = mapItem(payload.new as ItemRow);
+      set((state) => (state.items.some((i) => i.id === row.id) ? state : { items: [row, ...state.items] }));
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'inventory_items' }, (payload) => {
+      const row = mapItem(payload.new as ItemRow);
+      set((state) => ({ items: state.items.map((i) => (i.id === row.id ? row : i)) }));
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'inventory_items' }, (payload) => {
+      const oldId = (payload.old as { id: string }).id;
+      set((state) => ({ items: state.items.filter((i) => i.id !== oldId) }));
+    })
+    .subscribe();
+
+  supabase
+    .channel('transactions_changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
+      const row = mapTxn(payload.new as TxnRow);
+      set((state) => (state.transactions.some((t) => t.id === row.id) ? state : { transactions: [row, ...state.transactions] }));
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'transactions' }, (payload) => {
+      const row = mapTxn(payload.new as TxnRow);
+      set((state) => ({
+        transactions: state.transactions.map((t) => (t.id === row.id ? { ...row, payments: t.payments } : t)),
+      }));
+    })
+    .subscribe();
+
+  supabase
+    .channel('payments_changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments' }, (payload) => {
+      const paymentRow = payload.new as PaymentRow;
+      const payment = mapPayment(paymentRow);
+      set((state) => ({
+        transactions: state.transactions.map((t) =>
+          t.id === paymentRow.transaction_id && !t.payments.some((p) => p.id === payment.id)
+            ? { ...t, payments: [...t.payments, payment].sort((a, b) => a.date.localeCompare(b.date)) }
+            : t
+        ),
+      }));
+    })
+    .subscribe();
+}
+
 interface InventoryState {
   items: InventoryItem[];
   transactions: Transaction[];
@@ -205,6 +262,7 @@ export const useInventoryStore = create<InventoryState>()((set, get) => ({
       transactions: (txnsRes.data as TxnRow[]).map(mapTxn),
       loaded: true,
     });
+    subscribeToInventoryRealtime(set);
   },
 
   addStock: async (lines, postedBy) => {
