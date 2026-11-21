@@ -136,6 +136,18 @@ function announceError(message: string) {
   useToastStore.getState().push({ title: 'Something went wrong', message, tone: 'warning' });
 }
 
+/**
+ * Surfaces a visible toast if a realtime channel fails to connect instead
+ * of silently falling back to "only updates on refresh" with no clue why.
+ */
+function onChannelStatus(label: string) {
+  return (status: string, err?: Error) => {
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      announceError(`Live updates for ${label} aren't connected${err ? `: ${err.message}` : ''}. Refresh to see the latest.`);
+    }
+  };
+}
+
 export interface AddStockLine {
   category: string;
   brand: string;
@@ -192,7 +204,7 @@ function subscribeToInventoryRealtime(set: (fn: (state: InventoryState) => Parti
       const oldId = (payload.old as { id: string }).id;
       set((state) => ({ items: state.items.filter((i) => i.id !== oldId) }));
     })
-    .subscribe();
+    .subscribe(onChannelStatus('inventory'));
 
   supabase
     .channel('transactions_changes')
@@ -206,7 +218,7 @@ function subscribeToInventoryRealtime(set: (fn: (state: InventoryState) => Parti
         transactions: state.transactions.map((t) => (t.id === row.id ? { ...row, payments: t.payments } : t)),
       }));
     })
-    .subscribe();
+    .subscribe(onChannelStatus('transactions'));
 
   supabase
     .channel('payments_changes')
@@ -221,7 +233,7 @@ function subscribeToInventoryRealtime(set: (fn: (state: InventoryState) => Parti
         ),
       }));
     })
-    .subscribe();
+    .subscribe(onChannelStatus('payments'));
 }
 
 interface InventoryState {

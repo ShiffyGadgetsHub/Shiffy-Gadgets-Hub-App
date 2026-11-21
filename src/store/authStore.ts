@@ -78,7 +78,15 @@ function watchOwnProfile(userId: string, onDeactivated: () => void) {
         if (!row.active) onDeactivated();
       }
     )
-    .subscribe();
+    .subscribe((status, err) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        useToastStore.getState().push({
+          title: 'Something went wrong',
+          message: `Live updates for your account status aren't connected${err ? `: ${err.message}` : ''}.`,
+          tone: 'warning',
+        });
+      }
+    });
 }
 
 function stopWatchingOwnProfile() {
