@@ -7,6 +7,7 @@ import { useNotificationStore } from './store/notificationStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useUIStore } from './store/uiStore';
 import { RequireAuth, RequireAdmin } from './components/RequireAuth';
+import ForcedLogoutModal from './components/ForcedLogoutModal';
 import AppLayout from './components/layout/AppLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -67,6 +68,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ForcedLogoutModal />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin/login" element={<LoginPage area="admin" />} />

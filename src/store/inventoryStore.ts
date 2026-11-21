@@ -283,19 +283,17 @@ export const useInventoryStore = create<InventoryState>()((set, get) => ({
 
   deleteItem: async (id, deletedBy) => {
     const item = get().items.find((i) => i.id === id);
+    if (item?.status === 'out') {
+      announceError(`"${item.name}" is currently with a customer — return it or complete the sale before deleting it.`);
+      return;
+    }
+    if (item?.status === 'sold') {
+      announceError(`"${item.name}" has been sold and is kept for your sales records — it can't be deleted.`);
+      return;
+    }
     const { error } = await supabase.from('inventory_items').delete().eq('id', id);
     if (error) {
-      // Postgres foreign_key_violation — this item has a sale/release/return
-      // transaction pointing at it, and deleting it would destroy that
-      // record. That's deliberate: items with history aren't meant to be
-      // deletable, only ones added by mistake with no transactions yet.
-      if (error.code === '23503') {
-        announceError(
-          `"${item?.name ?? 'This item'}" can't be deleted — it has a sale, release or return on record. Deleting it would erase that history. If you need it off the shelf, mark it as sold/returned instead of deleting it.`
-        );
-      } else {
-        announceError(error.message);
-      }
+      announceError(error.message);
       return;
     }
     set({ items: get().items.filter((i) => i.id !== id) });

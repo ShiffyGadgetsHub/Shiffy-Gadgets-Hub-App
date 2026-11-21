@@ -56,16 +56,50 @@ async function loadProfile(userId: string, email: string): Promise<StaffUser | n
   return mapProfile(data as StaffProfileRow, email);
 }
 
+/**
+ * Listens for this signed-in user's own staff_profiles row being
+ * deactivated by an admin elsewhere, and signs them out immediately
+ * instead of waiting for their next login attempt.
+ */
+let ownProfileChannel: ReturnType<typeof supabase.channel> | null = null;
+
+function watchOwnProfile(userId: string, onDeactivated: () => void) {
+  if (ownProfileChannel) {
+    supabase.removeChannel(ownProfileChannel);
+    ownProfileChannel = null;
+  }
+  ownProfileChannel = supabase
+    .channel(`own-profile-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'staff_profiles', filter: `id=eq.${userId}` },
+      (payload) => {
+        const row = payload.new as StaffProfileRow;
+        if (!row.active) onDeactivated();
+      }
+    )
+    .subscribe();
+}
+
+function stopWatchingOwnProfile() {
+  if (ownProfileChannel) {
+    supabase.removeChannel(ownProfileChannel);
+    ownProfileChannel = null;
+  }
+}
+
 interface AuthState {
   currentUserId: string | null;
   profile: StaffUser | null;
   users: StaffUser[];
   ready: boolean;
+  forcedLogoutReason: string | null;
 
   init: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   currentUser: () => StaffUser | null;
+  clearForcedLogoutReason: () => void;
 
   fetchStaff: () => Promise<void>;
   addStaff: (input: {
@@ -90,6 +124,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   profile: null,
   users: [],
   ready: false,
+  forcedLogoutReason: null,
 
   init: async () => {
     const {
@@ -98,6 +133,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (session?.user) {
       const profile = await loadProfile(session.user.id, session.user.email ?? '');
       set({ currentUserId: session.user.id, profile });
+      if (profile) {
+        watchOwnProfile(session.user.id, () => {
+          set({ forcedLogoutReason: 'Your account has been deactivated. Contact your administrator for help.' });
+          supabase.auth.signOut().then(() => set({ currentUserId: null, profile: null, users: [] }));
+        });
+      }
     }
     set({ ready: true });
 
@@ -105,7 +146,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (session?.user) {
         const profile = await loadProfile(session.user.id, session.user.email ?? '');
         set({ currentUserId: session.user.id, profile });
+        if (profile) {
+          watchOwnProfile(session.user.id, () => {
+            set({ forcedLogoutReason: 'Your account has been deactivated. Contact your administrator for help.' });
+            supabase.auth.signOut().then(() => set({ currentUserId: null, profile: null, users: [] }));
+          });
+        }
       } else {
+        stopWatchingOwnProfile();
         set({ currentUserId: null, profile: null, users: [] });
       }
     });
@@ -122,7 +170,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
     if (!profile.active) {
       await supabase.auth.signOut();
-      return { ok: false, error: 'This account has been deactivated' };
+      return { ok: false, error: 'This account has been deactivated. Contact your administrator for help.' };
     }
 
     set({ currentUserId: data.user.id, profile });
@@ -130,11 +178,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   logout: async () => {
+    stopWatchingOwnProfile();
     await supabase.auth.signOut();
     set({ currentUserId: null, profile: null, users: [] });
   },
 
   currentUser: () => get().profile,
+
+  clearForcedLogoutReason: () => set({ forcedLogoutReason: null }),
 
   fetchStaff: async () => {
     const { data, error } = await supabase.from('staff_profiles').select('*').order('created_at', { ascending: true });
