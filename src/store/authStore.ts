@@ -88,6 +88,22 @@ function stopWatchingOwnProfile() {
   }
 }
 
+/**
+ * Shared by every path that can discover a deactivated account: the
+ * realtime watch (while already signed in and online), and session
+ * restore on load/tab-focus/token-refresh (covers a browser that still
+ * has a valid Supabase session from before the deactivation — e.g. it
+ * was offline, or realtime simply never connected — which otherwise
+ * would have let them straight back into the app since getSession()
+ * only checks that the underlying auth token is valid, not whether this
+ * app's staff_profiles.active is still true).
+ */
+function forceLogoutDeactivated(set: (partial: Partial<AuthState>) => void) {
+  set({ forcedLogoutReason: 'Your account has been deactivated. Contact your administrator for help.' });
+  stopWatchingOwnProfile();
+  supabase.auth.signOut().then(() => set({ currentUserId: null, profile: null, users: [] }));
+}
+
 interface AuthState {
   currentUserId: string | null;
   profile: StaffUser | null;
@@ -132,12 +148,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     } = await supabase.auth.getSession();
     if (session?.user) {
       const profile = await loadProfile(session.user.id, session.user.email ?? '');
-      set({ currentUserId: session.user.id, profile });
-      if (profile) {
-        watchOwnProfile(session.user.id, () => {
-          set({ forcedLogoutReason: 'Your account has been deactivated. Contact your administrator for help.' });
-          supabase.auth.signOut().then(() => set({ currentUserId: null, profile: null, users: [] }));
-        });
+      if (profile && !profile.active) {
+        forceLogoutDeactivated(set);
+      } else {
+        set({ currentUserId: session.user.id, profile });
+        if (profile) {
+          watchOwnProfile(session.user.id, () => forceLogoutDeactivated(set));
+        }
       }
     }
     set({ ready: true });
@@ -145,12 +162,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const profile = await loadProfile(session.user.id, session.user.email ?? '');
+        if (profile && !profile.active) {
+          forceLogoutDeactivated(set);
+          return;
+        }
         set({ currentUserId: session.user.id, profile });
         if (profile) {
-          watchOwnProfile(session.user.id, () => {
-            set({ forcedLogoutReason: 'Your account has been deactivated. Contact your administrator for help.' });
-            supabase.auth.signOut().then(() => set({ currentUserId: null, profile: null, users: [] }));
-          });
+          watchOwnProfile(session.user.id, () => forceLogoutDeactivated(set));
         }
       } else {
         stopWatchingOwnProfile();
