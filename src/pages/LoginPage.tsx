@@ -134,7 +134,7 @@ export default function LoginPage({ area }: { area: Area }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={area === 'admin' ? 'admin@shiffygadgetshub.com' : 'staff@shiffygadgetshub.com'}
+                placeholder="Enter your email"
               />
             </div>
             <div>
@@ -144,7 +144,7 @@ export default function LoginPage({ area }: { area: Area }) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   className="pr-10"
                 />
                 <button
