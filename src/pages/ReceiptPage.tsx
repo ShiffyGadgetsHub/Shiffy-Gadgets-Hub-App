@@ -164,7 +164,10 @@ export default function ReceiptPage() {
                 <tr className="bg-surface/60 align-top">
                   <td className="py-4 pl-4">
                     <p className="font-semibold text-ink">{txn.itemName}</p>
-                    <p className="text-xs text-ink-faint">{txn.itemCategory} · {txn.itemCondition} · {txn.itemColor}</p>
+                    <p className="text-xs text-ink-faint">
+                      {txn.itemCategory} · {txn.itemCondition}
+                      {txn.itemSimType && ` · ${txn.itemSimType}`} · {txn.itemColor}
+                    </p>
                     {item && (
                       <p className="mt-1 font-mono text-[11px] text-ink-faint">
                         S/N: {item.serialNumber}
