@@ -7,7 +7,7 @@ import { useCatalogStore } from '../../store/catalogStore';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { formatNumberInput, parseNumberInput } from '../../lib/format';
-import type { Condition, InventoryItem } from '../../types';
+import type { Condition, InventoryItem, SimType } from '../../types';
 
 export default function EditItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () => void }) {
   const updateItem = useInventoryStore((s) => s.updateItem);
@@ -36,6 +36,7 @@ export default function EditItemModal({ item, onClose }: { item: InventoryItem |
         category: form.category,
         brand: form.brand,
         condition: form.condition,
+        simType: form.category === 'Phones' ? form.simType ?? 'eSIM' : undefined,
         color: form.color,
         costPrice: form.costPrice,
         sellingPrice: form.sellingPrice,
@@ -63,6 +64,15 @@ export default function EditItemModal({ item, onClose }: { item: InventoryItem |
         <FieldWrap label="Condition" required>
           <SegmentedToggle options={[{ label: 'Used', value: 'Used' }, { label: 'New', value: 'New' }]} value={form.condition} onChange={(v) => set('condition', v as Condition)} />
         </FieldWrap>
+        {form.category === 'Phones' && (
+          <FieldWrap label="SIM Type" required>
+            <SegmentedToggle
+              options={[{ label: 'eSIM', value: 'eSIM' }, { label: 'PS', value: 'PS' }]}
+              value={form.simType ?? 'eSIM'}
+              onChange={(v) => set('simType', v as SimType)}
+            />
+          </FieldWrap>
+        )}
         <FieldWrap label="Category" required>
           <Select value={form.category} onChange={(e) => set('category', e.target.value)}>
             {categories.map((c) => (

@@ -6,7 +6,7 @@ import { useToastStore } from '../../store/toastStore';
 import { FieldWrap, Input, NumberInput, Select, SegmentedToggle, Textarea, UppercaseInput } from '../ui/Field';
 import ItemNameCombobox from '../ui/ItemNameCombobox';
 import { isImeiCode, isEidCode, isSerialCode } from '../../lib/scanCodes';
-import type { Condition } from '../../types';
+import type { Condition, SimType } from '../../types';
 
 export interface DraftLine {
   key: string;
@@ -14,6 +14,7 @@ export interface DraftLine {
   brand: string;
   name: string;
   condition: Condition;
+  simType?: SimType;
   quantity: number;
   serials: string[];
   imeis: string[];
@@ -128,7 +129,15 @@ export default function StockLineCard({
         <FieldWrap label="Category" required>
           <Select
             value={line.category}
-            onChange={(e) => onChange({ ...line, category: e.target.value, brand: '', name: line.name })}
+            onChange={(e) =>
+              onChange({
+                ...line,
+                category: e.target.value,
+                brand: '',
+                name: line.name,
+                simType: e.target.value === 'Phones' ? line.simType ?? 'eSIM' : undefined,
+              })
+            }
           >
             <option value="">Select</option>
             {categories.map((c) => (
@@ -161,6 +170,15 @@ export default function StockLineCard({
             onChange={(v) => set('condition', v as Condition)}
           />
         </FieldWrap>
+        {line.category === 'Phones' && (
+          <FieldWrap label="SIM Type" required>
+            <SegmentedToggle
+              options={[{ label: 'eSIM', value: 'eSIM' }, { label: 'PS', value: 'PS' }]}
+              value={line.simType ?? 'eSIM'}
+              onChange={(v) => set('simType', v as SimType)}
+            />
+          </FieldWrap>
+        )}
 
         <FieldWrap label="Quantity" required hint="Add more than one identical unit at once.">
           <Input

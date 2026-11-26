@@ -1,5 +1,8 @@
 export type Condition = 'New' | 'Used';
 
+/** eSIM vs Physical SIM — only meaningful for phones. */
+export type SimType = 'eSIM' | 'PS';
+
 export type ItemStatus = 'in_stock' | 'out' | 'sold';
 
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
@@ -12,6 +15,7 @@ export interface InventoryItem {
   category: string;
   brand: string;
   condition: Condition;
+  simType?: SimType;
   imei?: string;
   serialNumber: string;
   color: string;
@@ -40,6 +44,7 @@ export interface Transaction {
   itemCategory: string;
   itemBrand: string;
   itemCondition: Condition;
+  itemSimType?: SimType;
   itemColor: string;
   customerName: string;
   customerPhone?: string;
@@ -78,6 +83,7 @@ export interface StoreSettings {
   lowStockThreshold: number;
   address: string;
   supportPhone: string;
+  supportPhone2?: string;
   supportEmail: string;
   receiptFooter: string;
   bankName?: string;

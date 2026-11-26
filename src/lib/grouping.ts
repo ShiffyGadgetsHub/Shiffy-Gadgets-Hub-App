@@ -1,4 +1,4 @@
-import type { InventoryItem } from '../types';
+import type { InventoryItem, SimType } from '../types';
 
 export interface StockGroup {
   key: string;
@@ -6,6 +6,7 @@ export interface StockGroup {
   category: string;
   brand: string;
   condition: 'New' | 'Used';
+  simType?: SimType;
   count: number;
   totalValue: number;
 }
@@ -13,7 +14,7 @@ export interface StockGroup {
 export function groupStock(items: InventoryItem[]): StockGroup[] {
   const map = new Map<string, StockGroup>();
   for (const item of items) {
-    const key = `${item.name.toLowerCase()}__${item.condition}`;
+    const key = `${item.name.toLowerCase()}__${item.condition}__${item.simType ?? ''}`;
     const existing = map.get(key);
     if (existing) {
       existing.count += 1;
@@ -25,6 +26,7 @@ export function groupStock(items: InventoryItem[]): StockGroup[] {
         category: item.category,
         brand: item.brand,
         condition: item.condition,
+        simType: item.simType,
         count: 1,
         totalValue: item.sellingPrice,
       });

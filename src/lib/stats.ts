@@ -1,4 +1,4 @@
-import type { InventoryItem, Transaction } from '../types';
+import type { InventoryItem, SimType, Transaction } from '../types';
 
 export type SalesRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -168,6 +168,7 @@ export interface LowStockGroup {
   name: string;
   category: string;
   condition: 'New' | 'Used';
+  simType?: SimType;
   count: number;
 }
 
@@ -194,10 +195,18 @@ export function getKnownCustomers(transactions: Transaction[]): KnownCustomer[] 
 export function getLowStock(items: InventoryItem[], threshold: number): LowStockGroup[] {
   const map = new Map<string, LowStockGroup>();
   for (const item of getItemsInStock(items)) {
-    const key = `${item.name}__${item.condition}`;
+    const key = `${item.name}__${item.condition}__${item.simType ?? ''}`;
     const existing = map.get(key);
     if (existing) existing.count += 1;
-    else map.set(key, { key, name: item.name, category: item.category, condition: item.condition, count: 1 });
+    else
+      map.set(key, {
+        key,
+        name: item.name,
+        category: item.category,
+        condition: item.condition,
+        simType: item.simType,
+        count: 1,
+      });
   }
   return Array.from(map.values())
     .filter((g) => g.count <= threshold)

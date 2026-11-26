@@ -17,6 +17,7 @@ function emptyLine(): DraftLine {
     brand: '',
     name: '',
     condition: 'New',
+    simType: undefined,
     quantity: 1,
     serials: [''],
     imeis: [''],
@@ -37,7 +38,8 @@ function isLineValid(line: DraftLine): boolean {
       parseNumberInput(line.costPrice) > 0 &&
       parseNumberInput(line.sellingPrice) > 0 &&
       line.serials.every((s) => s.trim().length > 0) &&
-      line.colors.every((c) => c.trim().length > 0)
+      line.colors.every((c) => c.trim().length > 0) &&
+      (line.category !== 'Phones' || line.simType)
   );
 }
 
@@ -60,6 +62,7 @@ export default function AddStockPage() {
         brand: l.brand,
         name: l.name,
         condition: l.condition,
+        simType: l.simType,
         costPrice: parseNumberInput(l.costPrice),
         sellingPrice: parseNumberInput(l.sellingPrice),
         supplier: l.supplier,
@@ -108,7 +111,7 @@ export default function AddStockPage() {
 
         {attempted && !allValid && (
           <p className="rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-600 dark:bg-rose-500/10">
-            Please complete every required field (category, brand, item name, color, supplier, prices and serial numbers) on each line before continuing.
+            Please complete every required field (category, brand, item name, color, supplier, prices, serial numbers, and SIM type for phones) on each line before continuing.
           </p>
         )}
       </div>

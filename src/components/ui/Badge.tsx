@@ -50,3 +50,7 @@ export function transactionStatusTone(status: 'with_customer' | 'returned' | 'co
 export function conditionTone(condition: 'New' | 'Used'): Tone {
   return condition === 'New' ? 'green' : 'pink';
 }
+
+export function simTypeTone(simType: 'eSIM' | 'PS'): Tone {
+  return simType === 'eSIM' ? 'blue' : 'violet';
+}

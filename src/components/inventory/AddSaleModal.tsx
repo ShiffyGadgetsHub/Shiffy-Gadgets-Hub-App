@@ -2,7 +2,7 @@ import { useMemo, useState, type KeyboardEvent } from 'react';
 import { Search, X, ChevronLeft } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import Badge, { conditionTone } from '../ui/Badge';
+import Badge, { conditionTone, simTypeTone } from '../ui/Badge';
 import ProductIcon from '../ui/ProductIcon';
 import { FieldWrap, Input, NumberInput, Textarea } from '../ui/Field';
 import CustomerNameCombobox from '../ui/CustomerNameCombobox';
@@ -124,6 +124,7 @@ export default function AddSaleModal({ open, onClose }: { open: boolean; onClose
                   </p>
                 </div>
                 <Badge tone={conditionTone(item.condition)}>{item.condition}</Badge>
+                {item.simType && <Badge tone={simTypeTone(item.simType)}>{item.simType}</Badge>}
                 <span className="shrink-0 text-sm font-semibold text-ink">{formatCurrency(item.sellingPrice, currencySymbol)}</span>
               </button>
             ))}

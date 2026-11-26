@@ -23,7 +23,7 @@ import { getItemTransaction } from '../lib/stats';
 import ProductIcon from '../components/ui/ProductIcon';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import Badge, { itemStatusTone, paymentStatusTone, conditionTone } from '../components/ui/Badge';
+import Badge, { itemStatusTone, paymentStatusTone, conditionTone, simTypeTone } from '../components/ui/Badge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import ReleaseItemModal from '../components/inventory/ReleaseItemModal';
 import RecordPaymentModal from '../components/inventory/RecordPaymentModal';
@@ -101,6 +101,7 @@ export default function ViewItemPage() {
             <p className="text-sm text-ink-soft">{item.brand} · {item.color}</p>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <Badge tone={conditionTone(item.condition)}>{item.condition}</Badge>
+              {item.simType && <Badge tone={simTypeTone(item.simType)}>{item.simType}</Badge>}
               <Badge tone={itemStatusTone(item.status)}>{STATUS_LABEL[item.status]}</Badge>
             </div>
           </div>

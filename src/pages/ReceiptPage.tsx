@@ -241,7 +241,8 @@ export default function ReceiptPage() {
 
         {/* Footer bar */}
         <div className="bg-[#0a1a3f] px-8 py-4 text-center text-xs text-white/70">
-          {settings.supportPhone} · {settings.supportEmail}
+          {settings.supportPhone}
+          {settings.supportPhone2 && ` / ${settings.supportPhone2}`} · {settings.supportEmail}
         </div>
       </div>
     </div>

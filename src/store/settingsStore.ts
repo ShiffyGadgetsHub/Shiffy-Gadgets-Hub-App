@@ -14,6 +14,7 @@ interface SettingsRow {
   low_stock_threshold: number;
   address: string;
   support_phone: string;
+  support_phone_2: string | null;
   support_email: string;
   receipt_footer: string;
   bank_name: string | null;
@@ -31,6 +32,7 @@ function mapSettings(r: SettingsRow): StoreSettings {
     lowStockThreshold: r.low_stock_threshold,
     address: r.address,
     supportPhone: r.support_phone,
+    supportPhone2: r.support_phone_2 ?? undefined,
     supportEmail: r.support_email,
     receiptFooter: r.receipt_footer,
     bankName: r.bank_name ?? undefined,
@@ -45,9 +47,10 @@ const DEFAULT_SETTINGS: StoreSettings = {
   storeName: 'Shiffy Gadgets Hub',
   currencySymbol: '₦',
   lowStockThreshold: 3,
-  address: 'Shop 14, Otigba Street, Computer Village, Ikeja, Lagos',
+  address: '8, Adepele Street, Off Simbiat Abiola Way, Computer Village, Ikeja',
   supportPhone: '08012345678',
-  supportEmail: 'hello@shiffygadgetshub.ng',
+  supportPhone2: '08025267240',
+  supportEmail: 'contact.shiffygadgetshub@gmail.com',
   receiptFooter: 'Thank you for shopping with Shiffy Gadgets Hub. All sales of used items are final.',
   bankName: '',
   bankAccountNumber: '',
@@ -82,6 +85,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (patch.lowStockThreshold !== undefined) dbPatch.low_stock_threshold = patch.lowStockThreshold;
     if (patch.address !== undefined) dbPatch.address = patch.address;
     if (patch.supportPhone !== undefined) dbPatch.support_phone = patch.supportPhone;
+    if (patch.supportPhone2 !== undefined) dbPatch.support_phone_2 = patch.supportPhone2 || null;
     if (patch.supportEmail !== undefined) dbPatch.support_email = patch.supportEmail;
     if (patch.receiptFooter !== undefined) dbPatch.receipt_footer = patch.receiptFooter;
     if (patch.bankName !== undefined) dbPatch.bank_name = patch.bankName || null;

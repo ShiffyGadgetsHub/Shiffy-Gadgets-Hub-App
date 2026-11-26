@@ -7,7 +7,7 @@ import { formatCurrency, formatDateTime, pendingDuration } from '../lib/format';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
-import Badge, { conditionTone, paymentStatusTone } from '../components/ui/Badge';
+import Badge, { conditionTone, paymentStatusTone, simTypeTone } from '../components/ui/Badge';
 import ProductIcon from '../components/ui/ProductIcon';
 import ActionMenu from '../components/ui/ActionMenu';
 import EmptyState from '../components/ui/EmptyState';
@@ -92,6 +92,7 @@ export default function OutstandingPage() {
                           <p className="truncate text-sm font-medium text-ink">{t.itemName}</p>
                           <div className="mt-1 flex items-center gap-1.5">
                             <Badge tone={conditionTone(t.itemCondition)}>{t.itemCondition}</Badge>
+                            {t.itemSimType && <Badge tone={simTypeTone(t.itemSimType)}>{t.itemSimType}</Badge>}
                             <span className="text-xs text-ink-faint">{t.itemCategory}</span>
                           </div>
                         </div>

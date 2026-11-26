@@ -84,6 +84,7 @@ export default function SettingsPage() {
     logo: settings.logo ?? '',
     address: settings.address,
     supportPhone: settings.supportPhone,
+    supportPhone2: settings.supportPhone2 ?? '',
     supportEmail: settings.supportEmail,
     receiptFooter: settings.receiptFooter,
     bankName: settings.bankName ?? '',
@@ -307,6 +308,9 @@ export default function SettingsPage() {
               </FieldWrap>
               <FieldWrap label="Support phone">
                 <Input value={receipt.supportPhone} onChange={(e) => setReceipt((r) => ({ ...r, supportPhone: e.target.value }))} />
+              </FieldWrap>
+              <FieldWrap label="Support phone 2 (optional)">
+                <Input value={receipt.supportPhone2} onChange={(e) => setReceipt((r) => ({ ...r, supportPhone2: e.target.value }))} />
               </FieldWrap>
               <FieldWrap label="Support email">
                 <Input value={receipt.supportEmail} onChange={(e) => setReceipt((r) => ({ ...r, supportEmail: e.target.value }))} />

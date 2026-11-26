@@ -15,7 +15,7 @@ import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import FilterSelect from '../components/ui/FilterSelect';
-import Badge, { itemStatusTone, conditionTone } from '../components/ui/Badge';
+import Badge, { itemStatusTone, conditionTone, simTypeTone } from '../components/ui/Badge';
 import ProductIcon from '../components/ui/ProductIcon';
 import ActionMenu from '../components/ui/ActionMenu';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -44,6 +44,7 @@ export default function InventoryPage() {
   const [search, setSearch] = useState(params.get('q') ?? '');
   const [category, setCategory] = useState('All');
   const [condition, setCondition] = useState('All');
+  const [simType, setSimType] = useState('All');
   const [status, setStatus] = useState('All');
 
   const [releaseItem, setReleaseItem] = useState<InventoryItem | null>(null);
@@ -96,6 +97,7 @@ export default function InventoryPage() {
     return sorted.filter((item) => {
       if (category !== 'All' && item.category !== category) return false;
       if (condition !== 'All' && item.condition !== condition) return false;
+      if (simType !== 'All' && item.simType !== simType) return false;
       if (status !== 'All' && item.status !== status) return false;
       if (!q) return true;
       const txn = getItemTransaction(transactions, item.id);
@@ -106,7 +108,7 @@ export default function InventoryPage() {
         (txn?.customerName ?? '').toLowerCase().includes(q)
       );
     });
-  }, [items, transactions, search, category, condition, status]);
+  }, [items, transactions, search, category, condition, simType, status]);
 
   return (
     <div className="space-y-5">
@@ -141,6 +143,11 @@ export default function InventoryPage() {
             <option value="New">New</option>
             <option value="Used">Used</option>
           </FilterSelect>
+          <FilterSelect value={simType} onChange={(e) => setSimType(e.target.value)}>
+            <option value="All">All SIM Types</option>
+            <option value="eSIM">eSIM</option>
+            <option value="PS">PS</option>
+          </FilterSelect>
           <FilterSelect value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="All">All Status</option>
             <option value="in_stock">In Stock</option>
@@ -168,6 +175,7 @@ export default function InventoryPage() {
                 <tr className="border-b-2 border-line bg-surface text-xs uppercase tracking-wide text-ink-soft">
                   <th className="px-5 py-3 font-semibold">Product Name</th>
                   <th className="px-5 py-3 font-semibold">Condition</th>
+                  <th className="px-5 py-3 font-semibold">SIM Type</th>
                   <th className="px-5 py-3 font-semibold">Serial Number</th>
                   <th className="px-5 py-3 font-semibold">Category</th>
                   <th className="px-5 py-3 font-semibold">Color</th>
@@ -219,6 +227,9 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-5 py-3">
                         <Badge tone={conditionTone(item.condition)}>{item.condition}</Badge>
+                      </td>
+                      <td className="px-5 py-3">
+                        {item.simType ? <Badge tone={simTypeTone(item.simType)}>{item.simType}</Badge> : <span className="text-ink-faint">—</span>}
                       </td>
                       <td className="px-5 py-3 font-mono text-xs text-ink-soft">{item.serialNumber}</td>
                       <td className="px-5 py-3 text-ink-soft">{item.category}</td>

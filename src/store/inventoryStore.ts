@@ -4,7 +4,7 @@ import { useToastStore } from './toastStore';
 import { useNotificationStore } from './notificationStore';
 import { useSettingsStore } from './settingsStore';
 import { ordinal } from '../lib/ordinal';
-import type { Condition, InventoryItem, ItemStatus, PaymentRecord, PaymentStatus, Transaction, TransactionStatus } from '../types';
+import type { Condition, InventoryItem, ItemStatus, PaymentRecord, PaymentStatus, SimType, Transaction, TransactionStatus } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────
 // DB row <-> app type mapping (DB is snake_case, app types are camelCase)
@@ -16,6 +16,7 @@ interface ItemRow {
   category: string;
   brand: string;
   condition: Condition;
+  sim_type: SimType | null;
   imei: string | null;
   serial_number: string;
   color: string;
@@ -37,6 +38,7 @@ function mapItem(r: ItemRow): InventoryItem {
     category: r.category,
     brand: r.brand,
     condition: r.condition,
+    simType: r.sim_type ?? undefined,
     imei: r.imei ?? undefined,
     serialNumber: r.serial_number,
     color: r.color,
@@ -71,6 +73,7 @@ interface TxnRow {
   item_category: string;
   item_brand: string;
   item_condition: Condition;
+  item_sim_type: SimType | null;
   item_color: string;
   customer_name: string;
   customer_phone: string | null;
@@ -95,6 +98,7 @@ function mapTxn(r: TxnRow): Transaction {
     itemCategory: r.item_category,
     itemBrand: r.item_brand,
     itemCondition: r.item_condition,
+    itemSimType: r.item_sim_type ?? undefined,
     itemColor: r.item_color,
     customerName: r.customer_name,
     customerPhone: r.customer_phone ?? undefined,
@@ -141,6 +145,7 @@ export interface AddStockLine {
   brand: string;
   name: string;
   condition: Condition;
+  simType?: SimType;
   costPrice: number;
   sellingPrice: number;
   supplier: string;
@@ -276,6 +281,7 @@ export const useInventoryStore = create<InventoryState>()((set, get) => ({
           category: line.category,
           brand: line.brand.trim(),
           condition: line.condition,
+          sim_type: line.simType ?? null,
           serial_number: (line.serials[i] ?? '').trim().toUpperCase(),
           imei: line.imeis[i]?.trim().toUpperCase() || null,
           color: line.colors[i] ?? '',
@@ -318,6 +324,7 @@ export const useInventoryStore = create<InventoryState>()((set, get) => ({
     if (patch.category !== undefined) dbPatch.category = patch.category;
     if (patch.brand !== undefined) dbPatch.brand = patch.brand;
     if (patch.condition !== undefined) dbPatch.condition = patch.condition;
+    if (patch.simType !== undefined) dbPatch.sim_type = patch.simType || null;
     if (patch.imei !== undefined) dbPatch.imei = patch.imei || null;
     if (patch.serialNumber !== undefined) dbPatch.serial_number = patch.serialNumber;
     if (patch.color !== undefined) dbPatch.color = patch.color;
@@ -375,6 +382,7 @@ export const useInventoryStore = create<InventoryState>()((set, get) => ({
         item_category: item.category,
         item_brand: item.brand,
         item_condition: item.condition,
+        item_sim_type: item.simType ?? null,
         item_color: item.color,
         customer_name: customerName.trim(),
         customer_phone: customerPhone?.trim() || null,

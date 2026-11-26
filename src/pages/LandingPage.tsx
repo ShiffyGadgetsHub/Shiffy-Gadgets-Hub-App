@@ -339,6 +339,7 @@ export default function LandingPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-[#9598a8]">Get in touch</p>
               <div className="mt-3 space-y-1.5 text-sm text-[#5b6072]">
                 <p>{settings.supportPhone}</p>
+                {settings.supportPhone2 && <p>{settings.supportPhone2}</p>}
                 <p>{settings.supportEmail}</p>
               </div>
             </div>

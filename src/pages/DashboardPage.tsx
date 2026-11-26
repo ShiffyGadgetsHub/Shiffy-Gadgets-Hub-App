@@ -29,6 +29,8 @@ import { useBasePath, useIsStaffView } from '../lib/useBasePath';
 
 const AREA_COLOR = '#0a6cff';
 const USED_COLOR = '#ec3fdc';
+const ESIM_COLOR = '#0a6cff';
+const PS_COLOR = '#7c3aed';
 
 export default function DashboardPage() {
   const items = useInventoryStore((s) => s.items);
@@ -53,6 +55,14 @@ export default function DashboardPage() {
     ];
   }, [items]);
   const totalInStock = newVsUsed[0].value + newVsUsed[1].value;
+  const esimVsPs = useMemo(() => {
+    const phonesInStock = items.filter((i) => i.status === 'in_stock' && i.category === 'Phones');
+    return [
+      { name: 'eSIM', value: phonesInStock.filter((i) => i.simType === 'eSIM').length },
+      { name: 'PS', value: phonesInStock.filter((i) => i.simType === 'PS').length },
+    ];
+  }, [items]);
+  const totalPhonesInStock = esimVsPs[0].value + esimVsPs[1].value;
 
   const recent = isStaff ? transactions.filter((t) => t.staffName === user?.name) : transactions;
 
@@ -110,7 +120,10 @@ export default function DashboardPage() {
                         <ProductIcon category={t.itemCategory} size="sm" />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-ink">{t.itemName}</p>
-                          <p className="text-xs text-ink-faint">{t.itemCondition} · {formatDateTime(t.takenDate)}</p>
+                          <p className="text-xs text-ink-faint">
+                            {t.itemCondition}
+                            {t.itemSimType ? ` · ${t.itemSimType}` : ''} · {formatDateTime(t.takenDate)}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -151,7 +164,7 @@ export default function DashboardPage() {
                 <ProductIcon category={g.category} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-ink">{g.name}</p>
-                  <p className="text-xs text-ink-faint">{g.condition}</p>
+                  <p className="text-xs text-ink-faint">{g.condition}{g.simType ? ` · ${g.simType}` : ''}</p>
                 </div>
                 <Badge tone={g.count <= 1 ? 'red' : 'amber'}>{g.count} left</Badge>
               </div>
@@ -222,6 +235,36 @@ export default function DashboardPage() {
                 iconType="circle"
                 formatter={(value) => {
                   const entry = newVsUsed.find((d) => d.name === value);
+                  return <span style={{ color: 'var(--ink-soft)', fontSize: 12 }}>{value} ({entry?.value ?? 0})</span>;
+                }}
+              />
+              <Tooltip contentStyle={{ background: 'var(--surface-raised)', border: '1px solid var(--line)', borderRadius: 10, fontSize: 12, color: 'var(--ink)' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card>
+          <h2 className="mb-4 text-sm font-semibold text-ink">eSIM vs PS (Phones in stock)</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={esimVsPs}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={totalPhonesInStock > 0 ? 3 : 0}
+                stroke="var(--surface-raised)"
+                strokeWidth={2}
+              >
+                <Cell fill={ESIM_COLOR} />
+                <Cell fill={PS_COLOR} />
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                iconType="circle"
+                formatter={(value) => {
+                  const entry = esimVsPs.find((d) => d.name === value);
                   return <span style={{ color: 'var(--ink-soft)', fontSize: 12 }}>{value} ({entry?.value ?? 0})</span>;
                 }}
               />

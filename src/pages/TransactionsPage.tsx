@@ -13,7 +13,7 @@ import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
 import FilterSelect from '../components/ui/FilterSelect';
 import Button from '../components/ui/Button';
-import Badge, { transactionStatusTone, conditionTone } from '../components/ui/Badge';
+import Badge, { transactionStatusTone, conditionTone, simTypeTone } from '../components/ui/Badge';
 import ProductIcon from '../components/ui/ProductIcon';
 import ActionMenu from '../components/ui/ActionMenu';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -34,6 +34,7 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All');
   const [condition, setCondition] = useState('All');
+  const [simType, setSimType] = useState('All');
   const [category, setCategory] = useState('All');
   const [paymentTxn, setPaymentTxn] = useState<Transaction | null>(null);
   const [returnTarget, setReturnTarget] = useState<Transaction | null>(null);
@@ -54,6 +55,7 @@ export default function TransactionsPage() {
       .filter((t) => {
         if (status !== 'All' && t.status !== status) return false;
         if (condition !== 'All' && t.itemCondition !== condition) return false;
+        if (simType !== 'All' && t.itemSimType !== simType) return false;
         if (category !== 'All' && t.itemCategory !== category) return false;
         if (!q) return true;
         return t.itemName.toLowerCase().includes(q) || t.customerName.toLowerCase().includes(q) || t.receiptNo.toLowerCase().includes(q);
@@ -62,7 +64,7 @@ export default function TransactionsPage() {
         const weight = (t: Transaction) => (t.status === 'with_customer' ? 0 : 1);
         return weight(a) - weight(b) || b.takenDate.localeCompare(a.takenDate);
       });
-  }, [transactions, search, status, condition, category]);
+  }, [transactions, search, status, condition, simType, category]);
 
   function handleExport() {
     exportToExcel(
@@ -71,6 +73,7 @@ export default function TransactionsPage() {
       filtered.map((t) => ({
         Item: t.itemName,
         Condition: t.itemCondition,
+        'SIM Type': t.itemSimType ?? '',
         Category: t.itemCategory,
         Customer: t.customerName,
         'Taken Date': formatDateTime(t.takenDate),
@@ -115,6 +118,11 @@ export default function TransactionsPage() {
             <option value="New">New</option>
             <option value="Used">Used</option>
           </FilterSelect>
+          <FilterSelect value={simType} onChange={(e) => setSimType(e.target.value)}>
+            <option value="All">All SIM Types</option>
+            <option value="eSIM">eSIM</option>
+            <option value="PS">PS</option>
+          </FilterSelect>
           <FilterSelect value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="All">All Categories</option>
             {categories.map((c) => (
@@ -151,6 +159,7 @@ export default function TransactionsPage() {
                         <p className="truncate text-sm font-medium text-ink">{t.itemName}</p>
                         <div className="mt-1 flex items-center gap-1.5">
                           <Badge tone={conditionTone(t.itemCondition)}>{t.itemCondition}</Badge>
+                          {t.itemSimType && <Badge tone={simTypeTone(t.itemSimType)}>{t.itemSimType}</Badge>}
                           <span className="text-xs text-ink-faint">{t.itemCategory}</span>
                         </div>
                       </div>
